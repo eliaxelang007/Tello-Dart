@@ -1,11 +1,11 @@
 import 'dart:io';
 
-class TelloLogger
+class Logger
 {
-    final bool _telloLogging;
+    final bool _shouldLog;
     final List<String> _log = [];
 
-    TelloLogger(bool telloLogging): _telloLogging = telloLogging;
+    Logger(bool shouldLog): _shouldLog = shouldLog;
 
     void writeLog(String logLocation) async
     {
@@ -14,7 +14,7 @@ class TelloLogger
 
     void logData(String toLog)
     {
-        if(_telloLogging) 
+        if (_shouldLog) 
         {
             _log.add(toLog);
             print(toLog);
