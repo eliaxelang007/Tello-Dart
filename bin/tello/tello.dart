@@ -150,7 +150,12 @@ class Tello {
           String newTelloWifiName, String newTelloWifiPassword) =>
       _client.sendCommand("wifi $newTelloWifiName $newTelloWifiPassword");
 
-  Future<TelloState> get tellostate async {
+  // https://tellopilots.com/threads/tello-video-web-streaming.455/
+  Future<String> startStream() => _client.sendCommand("streamon");
+
+  Future<String> stopStream() => _client.sendCommand("streamoff");
+
+  Future<TelloState> get telloState async {
     String telloStateResponse = await _stateReceiver.receiveData();
 
     RegExp telloStateRegex = RegExp(

@@ -3,12 +3,12 @@ import 'tello/tello.dart';
 void main() async {
   Tello tello = await Tello.tello(logging: true);
 
-  await tello.battery;
+  await tello.startStream();
 
-  await tello.takeoff();
-  await tello.fly(FlyDirection.forward, 100);
+  for (int i = 0; i < 10; i++) {
+    await tello.battery;
+    await Future.delayed(Duration(seconds: 6));
+  }
 
-  await tello.flightTime;
-
-  await tello.land();
+  await tello.stopStream();
 }

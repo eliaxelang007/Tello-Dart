@@ -35,6 +35,7 @@ class TelloSocket {
     _incommingStream = _client.then((client) => client
         .asBroadcastStream()
         .timeout(responseTimeout)
+        .where((event) => event == RawSocketEvent.read)
         .map((event) => client.receive())
         .where((event) => event != null)
         .map((event) => event!));
