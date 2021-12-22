@@ -17,28 +17,40 @@ class _Address {
 }
 
 class TelloSocket {
-  final Logger _telloLogger;
-
   final Future<RawDatagramSocket> _client;
-  late final Future<Stream<Datagram>> _incommingStream;
   final _Address _telloAddress;
 
-  TelloSocket(Logger telloLogger,
+  late final Future<Stream<String>> _incommingStream;
+
+  TelloSocket(
       {Duration responseTimeout = const Duration(seconds: 12),
       String telloIp = "192.168.10.1",
       int telloPort = 8889,
       String clientIp = "0.0.0.0",
       int clientPort = 9000})
-      : _telloLogger = telloLogger,
-        _client = RawDatagramSocket.bind(InternetAddress(clientIp), clientPort),
+      : _client = RawDatagramSocket.bind(InternetAddress(clientIp), clientPort),
         _telloAddress = _Address(InternetAddress(telloIp), telloPort) {
     _incommingStream = _client.then((client) => client
-        .asBroadcastStream()
-        .timeout(responseTimeout)
-        .where((event) => event == RawSocketEvent.read)
-        .map((event) => client.receive())
-        .where((event) => event != null)
-        .map((event) => event!));
+            .asBroadcastStream()
+            .timeout(responseTimeout)
+            .where((event) => event == RawSocketEvent.read)
+            .map((event) => client.receive())
+            .where((event) => event != null)
+            .map((receivedData) {
+          receivedData!;
+          InternetAddress receivedDataAddress = receivedData.address;
+
+          if (receivedDataAddress != _telloAddress.ip) {
+            throw SocketException(
+                "Unknown connection from ip $receivedDataAddress");
+          }
+
+          String data = utf8.decode(receivedData.data);
+
+          Logger.logData("Received '$data'");
+
+          return data;
+        }));
   }
 
   Future<String> sendCommand(final String toSend) async {
@@ -58,22 +70,16 @@ class TelloSocket {
           address: telloAddress, port: telloPort);
     }
 
-    _telloLogger.logData("Sent '$stringData' to '$_telloAddress'");
+    Logger.logData("Sent '$stringData'");
   }
 
+  Future<void> close() async {
+    (await _client).close();
+  }
+
+  Future<Stream<String>> streamInData() => _incommingStream;
+
   Future<String> receiveData() async {
-    Datagram receivedData = (await (await _incommingStream).first);
-
-    InternetAddress receivedDataAddress = receivedData.address;
-
-    if (receivedDataAddress != _telloAddress.ip) {
-      throw SocketException("Unknown connection from ip $receivedDataAddress");
-    }
-
-    String data = utf8.decode(receivedData.data);
-
-    _telloLogger.logData("Received '$data' from $_telloAddress");
-
-    return data.trim();
+    return (await (await _incommingStream).first);
   }
 }

@@ -1,23 +1,19 @@
 import 'dart:io';
 
-class Logger
-{
-    final bool _shouldLog;
-    final List<String> _log = [];
+class Logger {
+  static bool shouldLog = false;
+  static final List<String> _log = [];
 
-    Logger(bool shouldLog): _shouldLog = shouldLog;
+  Logger._();
 
-    void writeLog(String logLocation) async
-    {
-      await File(logLocation).writeAsString(_log.join('\n'));
+  static void writeLog(String logLocation) async {
+    await File(logLocation).writeAsString(_log.join('\n'));
+  }
+
+  static void logData(String toLog) {
+    if (shouldLog) {
+      _log.add(toLog);
+      print(toLog);
     }
-
-    void logData(String toLog)
-    {
-        if (_shouldLog) 
-        {
-            _log.add(toLog);
-            print(toLog);
-        }
-    }
+  }
 }
