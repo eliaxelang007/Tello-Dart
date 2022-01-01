@@ -4,7 +4,6 @@ import 'dart:io';
 import 'modules/utilities/enums.dart';
 
 import 'modules/socket.dart';
-import 'modules/logger.dart';
 
 enum FlyDirection { forward, back, left, right, up, down }
 enum FlipDirection { front, back, left, right }
@@ -244,8 +243,6 @@ class Tello {
     RegExp flightTimeRegex = RegExp(r"((\d+)(\w+))");
     RegExpMatch matches = flightTimeRegex.firstMatch(flightTimeResponse)!;
 
-    Logger.log("Tello Flight Time Units: '${matches[3]}'");
-
     return int.parse("${matches[2]}");
   }
 
@@ -254,8 +251,6 @@ class Tello {
 
     RegExp heightRegex = RegExp(r"((\d+)(\w+))");
     RegExpMatch matches = heightRegex.firstMatch(heightResponse)!;
-
-    Logger.log("Tello Height Units: '${matches[3]}'");
 
     return int.parse("${matches[2]}");
   }
@@ -266,8 +261,6 @@ class Tello {
     RegExp tempratureRegex = RegExp(r"((\d+)(~)(\d+)(\w+))");
     RegExpMatch matches = tempratureRegex.firstMatch(tempratureResponse)!;
 
-    Logger.log("Tello Temprature Unit: '${matches[3]}'");
-
     return (double.parse("${matches[2]}") + double.parse("${matches[4]}")) / 2;
   }
 
@@ -277,8 +270,6 @@ class Tello {
     RegExp imuAttitudeRegex =
         RegExp(r"((pitch:)(.+)(;roll:)(.+)(;yaw:)(.+)(;))");
     RegExpMatch matches = imuAttitudeRegex.firstMatch(imuAttitudeReponse)!;
-
-    Logger.log("Tello IMU Attitude Units: Pitch, Roll, Yaw");
 
     return IMUAttitude(int.parse("${matches[3]}"), int.parse("${matches[5]}"),
         int.parse("${matches[7]}"));
@@ -295,9 +286,6 @@ class Tello {
     RegExpMatch matches =
         imuAccelerationRegex.firstMatch(imuAccelerationReponse)!;
 
-    Logger.log(
-        "Tello IMU Acceleration Units: X Acceleration, Y Acceleration, Z Acceleration");
-
     return IMUAcceleration(double.parse("${matches[3]}"),
         double.parse("${matches[5]}"), double.parse("${matches[7]}"));
   }
@@ -308,8 +296,6 @@ class Tello {
     RegExp distanceFromTakeoffRegex = RegExp(r"((\d+|.)(\w+))");
     RegExpMatch matches =
         distanceFromTakeoffRegex.firstMatch(distanceFromTakeoffResponse)!;
-
-    Logger.log("Tello Distance Form Takeoff Units: '${matches[3]}'");
 
     return double.parse("${matches[2]}");
   }

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'tello/modules/logger.dart';
 import 'tello/tello.dart';
 
 void main() async {
@@ -8,8 +7,6 @@ void main() async {
 
   try {
     /* Initializing */
-    Logger.shouldLog = false;
-
     tello = await Tello.tello();
 
     //tello.changeConnectionInfo(name: "TELLO_DART", password: "tello1234");

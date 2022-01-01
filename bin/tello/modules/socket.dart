@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'cleaner.dart';
 import 'error.dart';
-import 'logger.dart';
 
 class Address {
   final InternetAddress ip;
@@ -61,8 +60,6 @@ class TelloSocket {
 
       String data = utf8.decode(receivedData.data);
 
-      Logger.log("Received '$data'");
-
       data = data.trim();
 
       return data;
@@ -95,8 +92,6 @@ class TelloSocket {
       throw SocketException("We were unable to send '$data' to '$destination'.",
           address: destination.ip, port: destination.port);
     }
-
-    Logger.log("Sent '$data");
   }
 
   Future<String> receive() async {
