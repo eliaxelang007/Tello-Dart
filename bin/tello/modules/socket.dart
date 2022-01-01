@@ -73,8 +73,7 @@ class TelloSocket {
     _responses.listen((String response) {
       if (_responseQueue.isEmpty) return;
 
-      _responseQueue.first.complete(response);
-      _responseQueue.removeFirst();
+      _responseQueue.removeFirst().complete(response);
     });
   }
 
