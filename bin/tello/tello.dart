@@ -1,13 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'modules/utilities/enums.dart';
 import 'modules/utilities/range.dart';
 
-import "modules/tello_socket.dart";
+import 'modules/socket.dart';
 import 'modules/logger.dart';
-
-void _forceRange(int value, Range range) {
-  if (range(value)) return;
-  throw FormatException("A value exceeded the limits $range");
-}
 
 enum FlyDirection { forward, back, left, right, up, down }
 enum FlipDirection { front, back, left, right }
@@ -20,7 +18,7 @@ class IMUAttitude {
   const IMUAttitude(this.pitch, this.roll, this.yaw);
 
   @override
-  String toString() => "IMUAttitude(pitch: $pitch, roll: $roll, yaw: $yaw)";
+  String toString() => "$IMUAttitude(pitch: $pitch, roll: $roll, yaw: $yaw)";
 }
 
 class IMUAcceleration {
@@ -33,7 +31,7 @@ class IMUAcceleration {
 
   @override
   String toString() =>
-      "IMUAcceleration(xAcceleration: $xAcceleration, yAcceleration: $yAcceleration, zAcceleration: $zAcceleration)";
+      "$IMUAcceleration(xAcceleration: $xAcceleration, yAcceleration: $yAcceleration, zAcceleration: $zAcceleration)";
 }
 
 class IMUVelocity {
@@ -45,7 +43,7 @@ class IMUVelocity {
 
   @override
   String toString() =>
-      "IMUAcceleration(xVelocity: $xVelocity, yVelocity: $yVelocity, zVelocity: $zVelocity)";
+      "$IMUAcceleration(xVelocity: $xVelocity, yVelocity: $yVelocity, zVelocity: $zVelocity)";
 }
 
 class TelloState {
@@ -71,107 +69,65 @@ class TelloState {
     this.flightTime,
   );
 
-  Map<String, dynamic> _toMap() {
-    return {
-      "imuAttitude": imuAttitude,
-      "imuVelocity": imuVelocity,
-      "imuAcceleration": imuAcceleration,
-      "averageTemprature": averageTemprature,
-      "distanceFromTakeoff": distanceFromTakeoff,
-      "height": height,
-      "battery": battery,
-      "barometerReading": barometerReading,
-      "flightTime": flightTime,
-    };
-  }
-
   @override
-  String toString() {
-    return "TelloState\n(\n\t${_toMap().entries.map((element) => '${element.key}: ${element.value}').join('\n\t')}\n)";
-  }
+  String toString() => "$TelloState\n(\n\t${{
+        "imuAttitude": imuAttitude,
+        "imuVelocity": imuVelocity,
+        "imuAcceleration": imuAcceleration,
+        "averageTemprature": averageTemprature,
+        "distanceFromTakeoff": distanceFromTakeoff,
+        "height": height,
+        "battery": battery,
+        "barometerReading": barometerReading,
+        "flightTime": flightTime,
+      }.entries.map((element) => '${element.key}: ${element.value}').join('\n\t')}\n)";
 }
 
 class Tello {
   final TelloSocket _client;
   final TelloSocket _stateReceiver;
 
-  final bool _landOnDisconnect;
-
-  late final int _startFlightTime;
-
   static Future<Tello> tello({
-    bool landOnDisconnect = true,
-    Duration responseTimeout = const Duration(seconds: 12),
-    String telloIp = "192.168.10.1",
-    int telloPort = 8889,
-    String clientIp = "0.0.0.0",
-    int clientPort = 9000,
-    String stateReceiverIp = "0.0.0.0",
-    int stateReceiverPort = 8890,
+    Duration timeout = const Duration(seconds: 12),
+    Address? telloAddress,
+    Address? clientAddress,
+    Address? stateReceiverAddress,
   }) async {
-    Tello tello = Tello._(
-        landOnDisconnect: landOnDisconnect,
-        responseTimeout: responseTimeout,
-        telloIp: telloIp,
-        telloPort: telloPort,
-        clientIp: clientIp,
-        clientPort: clientPort,
-        stateReceiverIp: stateReceiverIp,
-        stateReceiverPort: stateReceiverPort);
+    stateReceiverAddress = stateReceiverAddress ??
+        Address(ip: InternetAddress.anyIPv4, port: 8890);
 
-    await tello._client.sendCommand("command");
-    tello._startFlightTime = await tello.flightTime;
+    List<TelloSocket> sockets = await Future.wait([
+      TelloSocket.telloSocket(
+          telloAddress: telloAddress,
+          clientAddress: clientAddress,
+          timeout: timeout),
+      TelloSocket.telloSocket(
+          telloAddress: telloAddress,
+          clientAddress: stateReceiverAddress,
+          timeout: timeout)
+    ]);
+
+    Tello tello = Tello._(sockets[0], sockets[1]);
+
+    await tello._client.command("command");
+    //await tello._stateReceiver.responses.first;
 
     return tello;
   }
 
-  Tello._({
-    bool landOnDisconnect = true,
-    Duration responseTimeout = const Duration(seconds: 12),
-    String telloIp = "192.168.10.1",
-    int telloPort = 8889,
-    String clientIp = "0.0.0.0",
-    int clientPort = 9000,
-    String stateReceiverIp = "0.0.0.0",
-    int stateReceiverPort = 8890,
-  })  : _landOnDisconnect = landOnDisconnect,
-        _client = TelloSocket(
-            responseTimeout: responseTimeout,
-            telloIp: telloIp,
-            telloPort: telloPort,
-            clientIp: clientIp,
-            clientPort: clientPort),
-        _stateReceiver = TelloSocket(
-            responseTimeout: responseTimeout,
-            telloIp: telloIp,
-            telloPort: telloPort,
-            clientIp: stateReceiverIp,
-            clientPort: stateReceiverPort);
+  Tello._(this._client, this._stateReceiver);
 
-  void _forceFlyingRange(int lengthCm) =>
-      _forceRange(lengthCm.abs(), const Range(20, 500));
+  Future<String> takeoff() => _client.command("takeoff");
 
-  void _forceSpeedRange(int speedCmPerSec) =>
-      _forceRange(speedCmPerSec, const Range(10, 100));
+  Future<String> land() => _client.command("land");
 
-  Future<String> takeoff() => _client.sendCommand("takeoff");
-
-  Future<String> land() => _client.sendCommand("land");
-
-  Future<String> emergencyShutdown() async {
-    String response = await _client.sendCommand("emergency");
-
-    _client.close();
-
-    return response;
-  }
+  Future<String> emergencyShutdown() => _client.command("emergency");
 
   Future<String> fly(
     FlyDirection direction,
     int lengthCm,
   ) {
-    _forceFlyingRange(lengthCm);
-    return _client.sendCommand("${direction.toShortString()} $lengthCm");
+    return _client.command("${direction.toShortString()} $lengthCm");
   }
 
   Future<String> rotate(
@@ -186,31 +142,26 @@ class Tello {
       turnDirection = 'c' + turnDirection;
     }
 
-    _forceRange(absAngle, const Range(1, 3600));
-
-    return _client.sendCommand("$turnDirection $absAngle");
+    return _client.command("$turnDirection $absAngle");
   }
 
   Future<String> flip(
     FlipDirection direction,
   ) =>
-      _client.sendCommand("flip ${direction.toShortString()[0]}");
+      _client.command("flip ${direction.toShortString()[0]}");
 
+  // https://github.com/dwalker-uk/TelloEduSwarmSearch/issues/1
   Future<String> flyToPosition(
     int xPosition,
     int yPosition,
     int zPosition,
     int speedCmPerSec,
   ) {
-    _forceFlyingRange(xPosition);
-    _forceFlyingRange(yPosition);
-    _forceFlyingRange(zPosition);
-    _forceSpeedRange(speedCmPerSec);
-
     return _client
-        .sendCommand("go $xPosition $yPosition $zPosition $speedCmPerSec");
+        .command("go $xPosition $yPosition $zPosition $speedCmPerSec");
   }
 
+  // https://tellopilots.com/threads/how-to-use-curve-x1-y1-z1-x2-y2-z2-speed-command.3134/
   Future<String> cruveToPosition(
     int x1Position,
     int y1Position,
@@ -220,54 +171,50 @@ class Tello {
     int z2Position,
     int speedCmPerSec,
   ) {
-    _forceFlyingRange(x1Position);
-    _forceFlyingRange(y1Position);
-    _forceFlyingRange(z1Position);
-    _forceFlyingRange(x2Position);
-    _forceFlyingRange(y2Position);
-    _forceFlyingRange(z2Position);
-    _forceSpeedRange(speedCmPerSec);
-
-    return _client.sendCommand(
+    return _client.command(
         "curve $x1Position $y1Position $z1Position $x2Position $y2Position $z2Position $speedCmPerSec");
   }
 
   Future<String> setSpeed(
     int speedCmPerSec,
   ) {
-    _forceSpeedRange(speedCmPerSec);
-    return _client.sendCommand("speed $speedCmPerSec");
+    return _client.command("speed $speedCmPerSec");
   }
 
-  Future<void> setRemoteControl(int roll, int pitch, int upDown, int yaw) {
-    void forceRemoteControlRange(int remoteControl) {
-      _forceRange(remoteControl, const Range(-100, 100));
-    }
+  void setRemoteControl(int roll, int pitch, int upDown, int yaw) {
+    void forceRemoteControlRange(int remoteControl) {}
 
     forceRemoteControlRange(roll);
     forceRemoteControlRange(pitch);
     forceRemoteControlRange(upDown);
     forceRemoteControlRange(yaw);
 
-    return _client.sendData("rc $roll $pitch $upDown $yaw");
+    return _client.send("rc $roll $pitch $upDown $yaw");
   }
 
-  Future<String> changeTelloWifiInfo(
-    String newTelloWifiName,
-    String newTelloWifiPassword,
-  ) =>
-      _client.sendCommand("wifi $newTelloWifiName $newTelloWifiPassword");
+  Future<String> changeConnectionInfo({
+    required String name,
+    required String password,
+  }) =>
+      _client.command("wifi $name $password");
 
   // https://tellopilots.com/threads/tello-video-web-streaming.455/
-  Future<String> startStream() => _client.sendCommand("streamon");
-  Future<String> stopStream() => _client.sendCommand("streamoff");
+  Future<String> startVideo() => _client.command("streamon");
+  Future<String> stopVideo() => _client.command("streamoff");
 
-  Future<Stream<TelloState>> get telloState async {
-    return (await _stateReceiver.streamInData()).map((telloStateResponse) {
+  Future<String?> custom(String command, {bool awaitResponse = true}) {
+    if (awaitResponse) return _client.command(command);
+
+    _client.send(command);
+    return Future.value(null);
+  }
+
+  Stream<TelloState> get state {
+    return _stateReceiver.responses.map((String currentState) {
       RegExp telloStateRegex = RegExp(
           r"((pitch:)(.+)(;roll:)(.+)(;yaw:)(.+)(;vgx:)(.+)(;vgy:)(.+)(;vgz:)(.+)(;templ:)(.+)(;temph:)(.+)(;tof:)(.+)(;h:)(.+)(;bat:)(.+)(;baro:)(.+)(;time:)(.+)(;agx:)(.+)(;agy:)(.+)(;agz:)(.+)(;))");
 
-      RegExpMatch matches = telloStateRegex.firstMatch(telloStateResponse)!;
+      RegExpMatch matches = telloStateRegex.firstMatch(currentState)!;
 
       return TelloState(
         IMUAttitude(int.parse("${matches[3]}"), int.parse("${matches[5]}"),
@@ -287,70 +234,69 @@ class Tello {
   }
 
   Future<double> get speed async =>
-      double.parse((await _client.sendCommand("speed?")));
+      double.parse((await _client.command("speed?")));
 
   Future<int> get battery async =>
-      int.parse((await _client.sendCommand("battery?")));
+      int.parse((await _client.command("battery?")));
 
   Future<int> get flightTime async {
-    String flightTimeResponse = (await _client.sendCommand("time?"));
+    String flightTimeResponse = (await _client.command("time?"));
 
     RegExp flightTimeRegex = RegExp(r"((\d+)(\w+))");
     RegExpMatch matches = flightTimeRegex.firstMatch(flightTimeResponse)!;
 
-    Logger.logData("Tello Flight Time Units: '${matches[3]}'");
+    Logger.log("Tello Flight Time Units: '${matches[3]}'");
 
     return int.parse("${matches[2]}");
   }
 
   Future<int> get height async {
-    String heightResponse = (await _client.sendCommand("height?"));
+    String heightResponse = (await _client.command("height?"));
 
     RegExp heightRegex = RegExp(r"((\d+)(\w+))");
     RegExpMatch matches = heightRegex.firstMatch(heightResponse)!;
 
-    Logger.logData("Tello Height Units: '${matches[3]}'");
+    Logger.log("Tello Height Units: '${matches[3]}'");
 
     return int.parse("${matches[2]}");
   }
 
   Future<double> get averageTemprature async {
-    String tempratureResponse = (await _client.sendCommand("temp?"));
+    String tempratureResponse = (await _client.command("temp?"));
 
     RegExp tempratureRegex = RegExp(r"((\d+)(~)(\d+)(\w+))");
     RegExpMatch matches = tempratureRegex.firstMatch(tempratureResponse)!;
 
-    Logger.logData("Tello Temprature Unit: '${matches[3]}'");
+    Logger.log("Tello Temprature Unit: '${matches[3]}'");
 
     return (double.parse("${matches[2]}") + double.parse("${matches[4]}")) / 2;
   }
 
   Future<IMUAttitude> get imuAttitude async {
-    String imuAttitudeReponse = (await _client.sendCommand("attitude?"));
+    String imuAttitudeReponse = (await _client.command("attitude?"));
 
     RegExp imuAttitudeRegex =
         RegExp(r"((pitch:)(.+)(;roll:)(.+)(;yaw:)(.+)(;))");
     RegExpMatch matches = imuAttitudeRegex.firstMatch(imuAttitudeReponse)!;
 
-    Logger.logData("Tello IMU Attitude Units: Pitch, Roll, Yaw");
+    Logger.log("Tello IMU Attitude Units: Pitch, Roll, Yaw");
 
     return IMUAttitude(int.parse("${matches[3]}"), int.parse("${matches[5]}"),
         int.parse("${matches[7]}"));
   }
 
   Future<double> get barometerReading async =>
-      double.parse((await _client.sendCommand("baro?")));
+      double.parse((await _client.command("baro?")));
 
   Future<IMUAcceleration> get imuAcceleration async {
-    String imuAccelerationReponse =
-        (await _client.sendCommand("acceleration?"));
+    String imuAccelerationReponse = (await _client.command("acceleration?"));
 
     RegExp imuAccelerationRegex =
         RegExp(r"((agx:)(.+)(;agy:)(.+)(;agz:)(.+)(;))");
     RegExpMatch matches =
         imuAccelerationRegex.firstMatch(imuAccelerationReponse)!;
 
-    Logger.logData(
+    Logger.log(
         "Tello IMU Acceleration Units: X Acceleration, Y Acceleration, Z Acceleration");
 
     return IMUAcceleration(double.parse("${matches[3]}"),
@@ -358,31 +304,23 @@ class Tello {
   }
 
   Future<double> get distanceFromTakeoff async {
-    String distanceFromTakeoffResponse = (await _client.sendCommand("tof?"));
+    String distanceFromTakeoffResponse = (await _client.command("tof?"));
 
     RegExp distanceFromTakeoffRegex = RegExp(r"((\d+|.)(\w+))");
     RegExpMatch matches =
         distanceFromTakeoffRegex.firstMatch(distanceFromTakeoffResponse)!;
 
-    Logger.logData("Tello Distance Form Takeoff Units: '${matches[3]}'");
+    Logger.log("Tello Distance Form Takeoff Units: '${matches[3]}'");
 
     return double.parse("${matches[2]}");
   }
 
   Future<int> get wifiSnr async {
-    return int.parse((await _client.sendCommand("wifi?")));
+    return int.parse((await _client.command("wifi?")));
   }
 
-  Future<void> disconnect() async {
-    try {
-      if (_landOnDisconnect && (await flightTime) > _startFlightTime) {
-        await land();
-      }
-    } catch (error) {
-      print(
-          "We couldn't automatically land your tello because of an error. The error states '$error'");
-    } finally {
-      await _client.close();
-    }
+  void disconnect() {
+    _client.disconnect();
+    _stateReceiver.disconnect();
   }
 }

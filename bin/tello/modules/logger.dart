@@ -10,7 +10,7 @@ class Logger {
     await File(logLocation).writeAsString(_log.join('\n'));
   }
 
-  static void logData(String toLog) {
+  static void log(String toLog) {
     if (shouldLog) {
       _log.add(toLog);
       print(toLog);
