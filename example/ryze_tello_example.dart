@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'tello/tello.dart';
+import 'package:ryze_tello/ryze_tello.dart';
 
 void main() async {
   Tello? tello;
