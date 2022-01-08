@@ -22,13 +22,13 @@ void main() async {
 
     await tello.flip(FlipDirection.front);
 
-    await tello.flyToPosition(75, 75, 0, 30);
-    await tello.cruveToPosition(70, 70, 0, 140, 0, 0, 30);
+    await tello.flyToPosition(x: -102, y: 0, z: 0, speed: 30);
+    await tello.cruveToPosition(x1: 51, z1: 51, x2: 102);
     await tello.setSpeed(10);
 
-    tello.setRemoteControl(0, 30, 0, 0);
+    tello.remoteControl(pitch: 30);
     await Future.delayed(const Duration(seconds: 1));
-    tello.setRemoteControl(0, 0, 0, 0);
+    tello.remoteControl();
 
     /* Listening To Drone Data */
     StreamSubscription<TelloState> stateListener =
