@@ -20,6 +20,8 @@ void main() async {
     await tello.rotate(180);
     await tello.rotate(-180);
 
+    await Future.delayed(const Duration(seconds: 1));
+
     await tello.flip(FlipDirection.front);
 
     await tello.flyToPosition(x: -102, y: 0, z: 0, speed: 30);
