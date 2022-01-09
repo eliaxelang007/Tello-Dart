@@ -44,6 +44,6 @@ void main() async {
 You may find these links helpful for understanding the underlying SDK 
 that serves as the base for this package.
 
-https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
-https://dl-cdn.ryzerobotics.com/downloads/tello/20180910/Tello%20SDK%20Documentation%20EN_1.3.pdf
-https://tellopilots.com/wiki/index/
+* https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+* https://dl-cdn.ryzerobotics.com/downloads/tello/20180910/Tello%20SDK%20Documentation%20EN_1.3.pdf
+* https://tellopilots.com/wiki/index/
