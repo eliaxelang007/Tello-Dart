@@ -93,11 +93,12 @@ class TelloState {
 
 String _parse(Uint8List command) => utf8.decode(command).trim();
 
-/// Represents the connection to the Tello in code.
+/// Represents the Tello in your code.
 class Tello {
   final TelloSocket _client;
   final TelloSocket _stateReceiver;
 
+  /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
   static Future<Tello> tello({
     Duration timeout = const Duration(seconds: 12),
     Address? telloAddress,

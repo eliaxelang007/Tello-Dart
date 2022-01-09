@@ -8,7 +8,6 @@ void main() {
   late final Tello tello;
 
   setUpAll(() async {
-    /* Initializing */
     print(
         "[Warning] Make sure you're connected to your tello's network before running this test.");
     tello = await Tello.tello();
