@@ -10,7 +10,7 @@ This packages provides a Dart interface to Ryze Tello drones.
 ## Usage
 
 Here's some sample code that shows how you can make a Tello takeoff,
-hover in the air for 5 seconds then land. 
+hover in the air for 5 seconds, and then land. 
 
 An important thing to note here is that tello.disconnect() must be called 
 to properly dispose of the sockets that connect to the tello.
