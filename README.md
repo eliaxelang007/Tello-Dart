@@ -1,4 +1,4 @@
-This packages provides a Dart interface to Ryze Tello drones.
+A library that provides a high level way for you to interact with your Tello.
 
 ## Getting started
 
