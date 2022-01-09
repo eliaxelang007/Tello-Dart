@@ -8,9 +8,13 @@ import 'modules/utilities/enums.dart';
 import 'modules/socket.dart';
 import 'modules/error.dart';
 
+/// Directions that the tello can fly in.
 enum FlyDirection { forward, back, left, right, up, down }
+
+/// Directions that the tello can flip toward.
 enum FlipDirection { front, back, left, right }
 
+/// Holds [pitch], [roll], and [yaw] data from the Tello.
 class IMUAttitude {
   final int pitch;
   final int roll;
@@ -22,6 +26,7 @@ class IMUAttitude {
   String toString() => "$IMUAttitude(pitch: $pitch, roll: $roll, yaw: $yaw)";
 }
 
+/// Holds acceleration data from the Tello.
 class IMUAcceleration {
   final double xAcceleration;
   final double yAcceleration;
@@ -35,6 +40,7 @@ class IMUAcceleration {
       "$IMUAcceleration(xAcceleration: $xAcceleration, yAcceleration: $yAcceleration, zAcceleration: $zAcceleration)";
 }
 
+/// Holds velocity data from the Tello.
 class IMUVelocity {
   final int xVelocity;
   final int yVelocity;
@@ -47,6 +53,7 @@ class IMUVelocity {
       "$IMUAcceleration(xVelocity: $xVelocity, yVelocity: $yVelocity, zVelocity: $zVelocity)";
 }
 
+/// Holds data from the Tello's current state.
 class TelloState {
   final IMUAttitude imuAttitude;
   final IMUVelocity imuVelocity;
@@ -86,6 +93,7 @@ class TelloState {
 
 String _parse(Uint8List command) => utf8.decode(command).trim();
 
+/// Represents the connection to the Tello in code.
 class Tello {
   final TelloSocket _client;
   final TelloSocket _stateReceiver;
@@ -113,7 +121,6 @@ class Tello {
     Tello tello = Tello._(sockets[0], sockets[1]);
 
     await tello._command("command");
-    //await tello._stateReceiver.responses.first;
 
     return tello;
   }
@@ -134,18 +141,23 @@ class Tello {
 
   void _send(String command) => _client.send(utf8.encode(command));
 
+  /// Makes the Tello takeoff and then returns the Tello's response.
   Future<String> takeoff() => _command("takeoff");
 
+  /// Makes the Tello land and then returns the Tello's response.
   Future<String> land() => _command("land");
 
+  /// Stops all of the Tello's motors.
   Future<String> emergencyShutdown() => _command("emergency");
 
+  /// Makes the Tello fly [lengthCm] in the [direction] you specify.
   Future<String> fly(
     FlyDirection direction,
     int lengthCm,
   ) =>
       _command("${direction.toShortString()} $lengthCm");
 
+  /// Makes the Tello rotate clockwise if [angle] is positive; otherwise, it rotates counterclockwise.
   Future<String> rotate(
     int angle,
   ) {
@@ -161,12 +173,14 @@ class Tello {
     return _command("$turnDirection $absAngle");
   }
 
+  /// Makes the Tello flip in the [direction] you specify.
   Future<String> flip(
     FlipDirection direction,
   ) =>
       _command("flip ${direction.toShortString()[0]}");
 
   // https://github.com/dwalker-uk/TelloEduSwarmSearch/issues/1
+  /// Makes the Tello fly to the ([x], [y], [z]) coordinates relative to its current position.
   Future<String> flyToPosition({
     int x = 0,
     int y = 0,
@@ -176,6 +190,7 @@ class Tello {
       _command("go $x $y $z $speed");
 
   // https://tellopilots.com/threads/how-to-use-curve-x1-y1-z1-x2-y2-z2-speed-command.3134/
+  /// Makes the Tello move in a curve that passes through the ([x1], [y1], [z1]) and ([x2], [y2], [z2]) coordinates that you specify.
   Future<String> cruveToPosition({
     int x1 = 0,
     int y1 = 0,
@@ -187,15 +202,18 @@ class Tello {
   }) =>
       _command("curve $x1 $y1 $z1 $x2 $y2 $z2 $speed");
 
+  /// Sets the Tello's speed to [speedCmPerSec]
   Future<String> setSpeed(
     int speedCmPerSec,
   ) =>
       _command("speed $speedCmPerSec");
 
+  /// Sets the Tello's remote control to ([roll], [pitch], [yaw], [vertical])
   void remoteControl(
           {int roll = 0, int pitch = 0, int yaw = 0, int vertical = 0}) =>
       _send("rc $roll $pitch $vertical $yaw");
 
+  /// Changes the Tello's wifi name and password to the [name] and [password] you specify.
   Future<String> changeWifi({
     required String name,
     required String password,
@@ -203,9 +221,18 @@ class Tello {
       _command("wifi $name $password");
 
   // https://tellopilots.com/threads/tello-video-web-streaming.455/
+  /// Starts the Tello's video stream.
+  ///
+  /// You can get a live feed of the stream with the terminal command:
+  /// ```bash
+  /// ffmpeg -i udp://192.168.10.1:11111 -f sdl "Tello Video Stream"
+  /// ```
   Future<String> startVideo() => _command("streamon");
+
+  /// Stops the Tello's video stream.
   Future<String> stopVideo() => _command("streamoff");
 
+  /// Allows you to write your own custom command for the Tello in extensions.
   Future<Uint8List?> custom(List<int> command, {bool awaitResponse = true}) {
     if (awaitResponse) return _client.command(command);
 
@@ -213,6 +240,7 @@ class Tello {
     return Future.value(null);
   }
 
+  /// A stream of [TelloState] from the drone.
   Stream<TelloState> get state =>
       _stateReceiver.responses.map((Uint8List currentState) {
         RegExp telloStateRegex = RegExp(
@@ -236,10 +264,13 @@ class Tello {
         );
       });
 
+  /// The Tello's speed, persumably in centimeters per seconds.
   Future<double> get speed async => double.parse((await _command("speed?")));
 
+  /// The Tello's battery percentage
   Future<int> get battery async => int.parse((await _command("battery?")));
 
+  /// The Tello's flight time, presumably in seconds.
   Future<int> get flightTime async {
     String flightTimeResponse = (await _command("time?"));
 
@@ -249,6 +280,7 @@ class Tello {
     return int.parse("${matches[2]}");
   }
 
+  /// The Tello's height from the ground, presumably in centimeters.
   Future<int> get height async {
     String heightResponse = (await _command("height?"));
 
@@ -258,6 +290,7 @@ class Tello {
     return int.parse("${matches[2]}");
   }
 
+  /// The Tello's average temprature, presumably in celsius.
   Future<double> get averageTemprature async {
     String tempratureResponse = (await _command("temp?"));
 
@@ -267,6 +300,7 @@ class Tello {
     return (double.parse("${matches[2]}") + double.parse("${matches[4]}")) / 2;
   }
 
+  /// The Tello's pitch, roll, and yaw.
   Future<IMUAttitude> get imuAttitude async {
     String imuAttitudeReponse = (await _command("attitude?"));
 
@@ -278,6 +312,7 @@ class Tello {
         int.parse("${matches[7]}"));
   }
 
+  /// The Tello's barometer reading.
   Future<double> get barometerReading async =>
       double.parse((await _command("baro?")));
 
@@ -293,6 +328,7 @@ class Tello {
         double.parse("${matches[5]}"), double.parse("${matches[7]}"));
   }
 
+  /// The Tello's distance from its takeoff point, presumably in cm.
   Future<double> get distanceFromTakeoff async {
     String distanceFromTakeoffResponse = (await _command("tof?"));
 
@@ -303,8 +339,10 @@ class Tello {
     return double.parse("${matches[2]}");
   }
 
+  /// The Tello's wifi strength to the client, seems to max out at 90%.
   Future<int> get wifiSnr async => int.parse((await _command("wifi?")));
 
+  /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {
     _client.disconnect();
     _stateReceiver.disconnect();
