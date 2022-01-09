@@ -89,13 +89,12 @@ class TelloSocket {
     }
   }
 
-  Future<Uint8List> receive() async {
+  Future<Uint8List> receive() {
     Completer<Uint8List> responseWaiter = Completer<Uint8List>();
 
     _responseQueue.add(responseWaiter);
 
-    Uint8List response = await responseWaiter.future;
-    return response;
+    return responseWaiter.future;
   }
 
   Stream<Uint8List> get responses => _responses;

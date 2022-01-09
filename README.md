@@ -1,39 +1,49 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
-
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
-
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+This packages provides a Dart interface to Ryze Tello drones.
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+* Make sure that your Tello has a good amount of battery
+* Turn on your Tello
+* Connect to your Tello's wifi
+* Run the example script and watch your Tello fly!
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+Here's some sample code that shows how you can make a Tello takeoff,
+hover in the air for 5 seconds then land. 
+
+An important thing to note here is that tello.disconnect() must be called 
+to properly dispose of the sockets that connect to the tello.
 
 ```dart
-const like = 'sample';
+import 'package:ryze_tello/ryze_tello.dart';
+
+void main() async {
+  late final Tello tello;
+
+  try {
+    /* Initializing */
+    tello = await Tello.tello();
+
+    /* Flying Around */
+    await tello.takeoff();
+
+    await Future.delayed(const Duration(seconds: 5));
+
+    await tello.land();
+  } finally {
+    /* Cleanup & Disconnection */
+    tello
+        .disconnect(); 
+  }
+}
 ```
 
 ## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+You may find these links helpful for understanding the underlying SDK 
+that serves as the base for this package.
+
+https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+https://dl-cdn.ryzerobotics.com/downloads/tello/20180910/Tello%20SDK%20Documentation%20EN_1.3.pdf
+https://tellopilots.com/wiki/index/
