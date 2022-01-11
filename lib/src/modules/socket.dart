@@ -70,7 +70,7 @@ class TelloSocket {
     });
   }
 
-  Future<Uint8List> command(List<int> data) {
+  Future<Uint8List> command(Uint8List data) {
     Future<Uint8List> response = receive();
 
     send(data);
@@ -78,7 +78,7 @@ class TelloSocket {
     return response;
   }
 
-  void send(List<int> data) {
+  void send(Uint8List data) {
     Address destination = _telloAddress;
 
     int bufferSize = _socket.send(data, destination.ip, destination.port);

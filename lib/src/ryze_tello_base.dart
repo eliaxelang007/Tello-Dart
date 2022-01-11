@@ -91,7 +91,8 @@ class TelloState {
       }.entries.map((element) => '${element.key}: ${element.value}').join('\n\t')}\n)";
 }
 
-String _parse(Uint8List command) => utf8.decode(command).trim();
+String _decode(Uint8List command) => utf8.decode(command).trim();
+Uint8List _encode(String command) => Uint8List.fromList(utf8.encode(command));
 
 /// Represents the Tello in your code.
 class Tello {
@@ -129,7 +130,7 @@ class Tello {
   Tello._(this._client, this._stateReceiver);
 
   Future<String> _command(String command) async {
-    String response = _parse(await _client.command(utf8.encode(command)));
+    String response = _decode(await _client.command(_encode(command)));
 
     if (response.startsWith("error")) {
       String errorMessage = response.substring(5).trim();
@@ -140,7 +141,7 @@ class Tello {
     return response;
   }
 
-  void _send(String command) => _client.send(utf8.encode(command));
+  void _send(String command) => _client.send(_encode(command));
 
   /// Makes the Tello takeoff and then returns the Tello's response.
   Future<String> takeoff() => _command("takeoff");
@@ -149,7 +150,7 @@ class Tello {
   Future<String> land() => _command("land");
 
   /// Stops all of the Tello's motors.
-  Future<String> emergencyShutdown() => _command("emergency");
+  void emergencyShutdown() => _send("emergency");
 
   /// Makes the Tello fly [lengthCm] in the [direction] you specify.
   Future<String> fly(
@@ -224,22 +225,16 @@ class Tello {
   // https://tellopilots.com/threads/tello-video-web-streaming.455/
   /// Starts the Tello's video stream.
   ///
+  /// By default, the Tello streams its video data on port 11111.
+  ///
   /// You can get a live feed of the stream with the terminal command:
   /// ```bash
-  /// ffmpeg -i udp://192.168.10.1:11111 -f sdl "Tello Video Stream"
+  /// ffmpeg -i udp://0.0.0.0:11111 -f sdl "Tello Video Stream"
   /// ```
   Future<String> startVideo() => _command("streamon");
 
   /// Stops the Tello's video stream.
   Future<String> stopVideo() => _command("streamoff");
-
-  /// Allows you to write your own custom command for the Tello in extensions.
-  Future<Uint8List?> custom(List<int> command, {bool awaitResponse = true}) {
-    if (awaitResponse) return _client.command(command);
-
-    _client.send(command);
-    return Future.value(null);
-  }
 
   /// A stream of [TelloState] from the drone.
   Stream<TelloState> get state =>
@@ -247,7 +242,8 @@ class Tello {
         RegExp telloStateRegex = RegExp(
             r"((pitch:)(.+)(;roll:)(.+)(;yaw:)(.+)(;vgx:)(.+)(;vgy:)(.+)(;vgz:)(.+)(;templ:)(.+)(;temph:)(.+)(;tof:)(.+)(;h:)(.+)(;bat:)(.+)(;baro:)(.+)(;time:)(.+)(;agx:)(.+)(;agy:)(.+)(;agz:)(.+)(;))");
 
-        RegExpMatch matches = telloStateRegex.firstMatch(_parse(currentState))!;
+        RegExpMatch matches =
+            telloStateRegex.firstMatch(_decode(currentState))!;
 
         return TelloState(
           IMUAttitude(int.parse("${matches[3]}"), int.parse("${matches[5]}"),
