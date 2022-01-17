@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ryze_tello/ryze_tello.dart';
 
-void main() async {
+/*void main() async {
   late final Tello tello;
 
   try {
@@ -80,5 +80,21 @@ void main() async {
 
     tello
         .disconnect(); // IMPORTANT: Must be called to properly dispose of the sockets that connect to the tello.
+  }
+}*/
+
+void main() async {
+  late final Tello tello;
+
+  try {
+    /* Initializing */
+    tello = await Tello.tello();
+
+    //tello.changeConnectionInfo(name: "TELLO_DART", password: "tello1234");
+
+    /* Flying Around */
+    await tello.takeoff();
+  } finally {
+    tello.disconnect();
   }
 }

@@ -33,12 +33,12 @@ class TelloSocket {
   static Future<TelloSocket> telloSocket(
       {Duration timeout = const Duration(seconds: 12),
       Address? telloAddress,
-      Address? clientAddress}) async {
-    final Address _clientAddress =
-        clientAddress ?? Address(ip: InternetAddress.anyIPv4, port: 9000);
+      Address? localAddress}) async {
+    final Address _localAddress =
+        localAddress ?? Address(ip: InternetAddress.anyIPv4, port: 9000);
 
     return TelloSocket._(
-        await RawDatagramSocket.bind(_clientAddress.ip, _clientAddress.port),
+        await RawDatagramSocket.bind(_localAddress.ip, _localAddress.port),
         telloAddress ??
             Address(ip: InternetAddress("192.168.10.1"), port: 8889),
         timeout: timeout);

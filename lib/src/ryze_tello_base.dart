@@ -98,14 +98,14 @@ Uint8List _encode(String command) => Uint8List.fromList(utf8.encode(command));
 
 /// Represents the Tello in your code.
 class Tello {
-  final TelloSocket _client;
+  final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
   /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
   static Future<Tello> tello({
     Duration timeout = const Duration(seconds: 12),
     Address? telloAddress,
-    Address? clientAddress,
+    Address? localAddress,
     Address? stateReceiverAddress,
   }) async {
     stateReceiverAddress = stateReceiverAddress ??
@@ -114,11 +114,11 @@ class Tello {
     List<TelloSocket> sockets = await Future.wait([
       TelloSocket.telloSocket(
           telloAddress: telloAddress,
-          clientAddress: clientAddress,
+          localAddress: localAddress,
           timeout: timeout),
       TelloSocket.telloSocket(
           telloAddress: telloAddress,
-          clientAddress: stateReceiverAddress,
+          localAddress: stateReceiverAddress,
           timeout: timeout)
     ]);
 
@@ -129,10 +129,10 @@ class Tello {
     return tello;
   }
 
-  Tello._(this._client, this._stateReceiver);
+  Tello._(this._connection, this._stateReceiver);
 
   Future<String> _command(String command) async {
-    String response = _decode(await _client.command(_encode(command)));
+    String response = _decode(await _connection.command(_encode(command)));
 
     if (response.startsWith("error")) {
       String errorMessage = response.substring(5).trim();
@@ -143,11 +143,11 @@ class Tello {
     return response;
   }
 
-  void _send(String command) => _client.send(_encode(command));
+  void _send(String command) => _connection.send(_encode(command));
 
   /// Makes the Tello takeoff and then returns the Tello's response.
   Future<Uint8List> takeoff() =>
-      _client.command(Packet(Command.takeoff).bufffer);
+      _connection.command(Packet(Command.takeoff).bufffer);
 
   /// Makes the Tello land and then returns the Tello's response.
   Future<String> land() => _command("land");
@@ -339,12 +339,12 @@ class Tello {
     return double.parse("${matches[2]}");
   }
 
-  /// The Tello's wifi strength to the client, seems to max out at 90%.
+  /// The strength of the wifi connection to the Tello, seems to max out at 90%.
   Future<int> get wifiSnr async => int.parse((await _command("wifi?")));
 
   /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {
-    _client.disconnect();
+    _connection.disconnect();
     _stateReceiver.disconnect();
   }
 }
