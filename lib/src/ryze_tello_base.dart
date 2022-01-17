@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ryze_tello/src/modules/packet.dart';
+
 import 'modules/utilities/enums.dart';
 
 import 'modules/socket.dart';
@@ -144,7 +146,8 @@ class Tello {
   void _send(String command) => _client.send(_encode(command));
 
   /// Makes the Tello takeoff and then returns the Tello's response.
-  Future<String> takeoff() => _command("takeoff");
+  Future<Uint8List> takeoff() =>
+      _client.command(Packet(Command.takeoff).bufffer);
 
   /// Makes the Tello land and then returns the Tello's response.
   Future<String> land() => _command("land");
