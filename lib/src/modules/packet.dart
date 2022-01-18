@@ -1,27 +1,60 @@
 import 'dart:typed_data';
 
-import 'package:ryze_tello/src/modules/utilities/numbers.dart';
+import 'utilities/enums.dart';
 
 import 'crc.dart';
 
-class PacketType {
-  final int _value;
+enum PacketType { get, data1, data2, command, flipCommand }
 
-  const PacketType._(this._value);
+extension PacketTypeExtension on PacketType {
+  static final Map<int, PacketType> _valueMapping = {
+    for (PacketType type in PacketType.values) type._value: type
+  };
 
-  static const PacketType get = PacketType._(1);
-  static const PacketType data1 = PacketType._(2);
-  static const PacketType data2 = PacketType._(4);
-  static const PacketType command = PacketType._(5);
-  static const PacketType flipCommand = PacketType._(6);
+  int get _value {
+    return index + ((index <= 1) ? 1 : 2);
+  }
+
+  static PacketType fromValue(int value) {
+    return _valueMapping[value]!;
+  }
 }
 
-class Command {
-  final int _value;
+enum Command { takeoff, land, flightStatus }
 
-  const Command._(this._value);
+extension CommandExtension on Command {
+  static final Map<int, Command> _valueMapping = {
+    for (Command type in Command.values) type._value: type
+  };
 
-  static const Command takeoff = Command._(0x0054);
+  int get _value {
+    switch (this) {
+      case (Command.takeoff):
+        {
+          return 0x0054;
+        }
+
+      case (Command.land):
+        {
+          return 0x0055;
+        }
+
+      case (Command.flightStatus):
+        {
+          return 0x0056;
+        }
+
+      default:
+        {
+          throw UnimplementedError("Unknown command '${toShortString()}'");
+        }
+    }
+  }
+
+  static Command fromValue(int value) {
+    print(value);
+    return _valueMapping[value]!;
+  }
 }
 
 class Packet {
@@ -29,24 +62,35 @@ class Packet {
 
   static const int minimumPacketSize = 11;
 
-  final PacketType _packetType; // 3 bit
   final bool _toDrone;
+  final PacketType _packetType; // 3 bit
   final Command _command; // 2 bytes (little endian)
   final int _sequence; // 2 bytes (little endian) (usually 0)
   final Uint8List _payload; // varying bytes (optional)
 
   Packet(this._command,
-      {PacketType packetType = PacketType.command,
-      int sequence = 0,
+      {int sequence = 0,
+      PacketType packetType = PacketType.command,
       Uint8List? payload})
-      : _packetType = packetType,
-        _toDrone = true,
+      : _toDrone = true,
+        _packetType = packetType,
         _sequence = sequence,
         _payload = payload ?? Uint8List(0);
 
-  void pushByte(int byte) => _payload.add(byte);
-  void pushAll(Uint8List bytes) => _payload.addAll(bytes);
-  int popByte() => _payload.removeLast();
+  Packet.fromBuffer(Uint8List buffer)
+      : _toDrone = false,
+        _packetType = PacketTypeExtension.fromValue((buffer[4] >> 3) & 0x07),
+        _command = CommandExtension.fromValue((buffer[6] << 8) | buffer[5]),
+        _sequence = ((buffer[8]) << 8) | (buffer[7]),
+        _payload = buffer.sublist(9, buffer.length - 2) {
+    int crc8Validation = calculateCrc8(bufffer.sublist(0, 4));
+    int crc16Validation = calculateCrc16(buffer);
+
+    if (crc8Validation != 0 || crc16Validation != 0) {
+      throw FormatException(
+          "The packet buffer '$bufffer' failed to be validated with crcs");
+    }
+  }
 
   Uint8List get bufffer {
     int payloadSize = _payload.length;
@@ -65,14 +109,23 @@ class Packet {
       _sequence,
       _sequence >> 8,
       ..._payload,
+      0, // Will be the first byte of crc 16 later
+      0 // Will be the second byte of crc 16 later
     ]);
 
     int crc8 = calculateCrc8(bytes.sublist(0, 3));
     bytes[3] = crc8;
 
-    int crc16 = calculateCrc16(bytes);
-    bytes.addAll([crc16, crc16 >> 8]);
+    int packetEnd = bytes.length - 2;
+
+    int crc16 = calculateCrc16(bytes.sublist(0, packetEnd));
+    bytes[packetEnd] = crc16;
+    bytes[packetEnd + 1] = crc16 >> 8;
 
     return bytes;
   }
+
+  @override
+  String toString() =>
+      "$Packet(toDrone: $_toDrone, packetType: ${_packetType.toShortString()}, command: ${_command.toShortString()}, sequence: $_sequence, payload: $_payload)";
 }

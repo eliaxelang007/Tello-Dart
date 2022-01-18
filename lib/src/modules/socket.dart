@@ -84,7 +84,7 @@ class TelloSocket {
     int bufferSize = _socket.send(data, destination.ip, destination.port);
 
     if (bufferSize != data.length) {
-      throw SocketException("We were unable to send '$data' to '$destination'.",
+      throw SocketException("Unable to send '$data' to '$destination'.",
           address: destination.ip, port: destination.port);
     }
   }

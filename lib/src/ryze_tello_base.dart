@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:ryze_tello/src/modules/packet.dart';
 
-import 'modules/utilities/enums.dart';
+//import 'modules/utilities/enums.dart';
 
 import 'modules/socket.dart';
 import 'modules/error.dart';
@@ -93,21 +93,20 @@ class TelloState {
       }.entries.map((element) => '${element.key}: ${element.value}').join('\n\t')}\n)";
 }
 
-String _decode(Uint8List command) => utf8.decode(command).trim();
-Uint8List _encode(String command) => Uint8List.fromList(utf8.encode(command));
-
 /// Represents the Tello in your code.
 class Tello {
   final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
+  int commandSequence = 0;
+
   /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
-  static Future<Tello> tello({
-    Duration timeout = const Duration(seconds: 12),
-    Address? telloAddress,
-    Address? localAddress,
-    Address? stateReceiverAddress,
-  }) async {
+  static Future<Tello> tello(
+      {Duration timeout = const Duration(seconds: 12),
+      Address? telloAddress,
+      Address? localAddress,
+      Address? stateReceiverAddress,
+      int videoPort = 11111}) async {
     stateReceiverAddress = stateReceiverAddress ??
         Address(ip: InternetAddress.anyIPv4, port: 8890);
 
@@ -124,14 +123,14 @@ class Tello {
 
     Tello tello = Tello._(sockets[0], sockets[1]);
 
-    await tello._command("command");
+    await tello._connect(videoPort);
 
     return tello;
   }
 
   Tello._(this._connection, this._stateReceiver);
 
-  Future<String> _command(String command) async {
+  /*Future<String> _command(String command) async {
     String response = _decode(await _connection.command(_encode(command)));
 
     if (response.startsWith("error")) {
@@ -143,21 +142,32 @@ class Tello {
     return response;
   }
 
-  void _send(String command) => _connection.send(_encode(command));
+  void _send(String command) => _connection.send(_encode(command));*/
+
+  Future<void> _connect(int videoPort) async {
+    Uint8List response = await _connection.command(Uint8List.fromList(
+        [...utf8.encode("conn_req:"), videoPort, videoPort >> 8]));
+
+    if (utf8.decode(response).startsWith("conn_ack:")) return;
+
+    throw TelloError("Couldn't connect to the tello successfully.");
+  }
+
+  Future<Packet> _command(Command command,
+          {PacketType packetType = PacketType.command}) async =>
+      Packet.fromBuffer(await _connection.command(
+          Packet(command, sequence: ++commandSequence, packetType: packetType)
+              .bufffer));
 
   /// Makes the Tello takeoff and then returns the Tello's response.
-  Future<Uint8List> takeoff() =>
-      _connection.command(Packet(Command.takeoff).bufffer);
+  Future<Packet> takeoff() => _command(Command.takeoff);
 
   /// Makes the Tello land and then returns the Tello's response.
-  Future<String> land() => _command("land");
-
-  /// Stops all of the Tello's motors.
-  void emergencyShutdown() => _send("emergency");
+  Future<Packet> land() => _command(Command.land);
 
   /// Makes the Tello fly [lengthCm] in the [direction] you specify.
-  Future<String> fly(
-    FlyDirection direction,
+  /*Future<String> fly(
+    FlyDirection direction, 
     int lengthCm,
   ) =>
       _command("${direction.toShortString()} $lengthCm");
@@ -340,7 +350,7 @@ class Tello {
   }
 
   /// The strength of the wifi connection to the Tello, seems to max out at 90%.
-  Future<int> get wifiSnr async => int.parse((await _command("wifi?")));
+  Future<int> get wifiSnr async => int.parse((await _command("wifi?")));*/
 
   /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {

@@ -1,9 +1,9 @@
 class Cache<I, O> {
   final Map<I, O> _cachedOutputs = {};
-  final O Function(I) caclulator;
+  final O Function(I) generator;
   final I Function(I) inputSanitizer;
 
-  Cache(this.caclulator, {I Function(I)? inputSanitizer})
+  Cache(this.generator, {I Function(I)? inputSanitizer})
       : inputSanitizer = inputSanitizer ?? ((value) => value);
 
   O call(I input) {
@@ -21,7 +21,7 @@ class Cache<I, O> {
   }
 
   O _calculate(I input) {
-    O result = caclulator(input);
+    O result = generator(input);
 
     _cachedOutputs[input] = result;
 
