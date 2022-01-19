@@ -1,11 +1,15 @@
-## 1.0.0
+## 1.0.3
 
-- Initial version.
+- Changed readme & miscellaneous.
+
+## 1.0.2
+
+- Changed readme.
 
 ## 1.0.1
 
 - Added documentation.
 
-## 1.0.2
+## 1.0.0
 
-- Changed readme.
+- Initial version.
