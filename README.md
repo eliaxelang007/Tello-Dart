@@ -1,18 +1,18 @@
-This packages provides a Dart interface to Ryze Tello drones.
+This package provides a Dart interface to Tello drones.
 
 ## Getting started
 
-* Make sure that your Tello has a good amount of battery
-* Turn on your Tello
-* Connect to your Tello's wifi
-* Run the example script and watch your Tello fly!
+* Install this package from [pub.dev](https://pub.dev/packages/ryze_tello).
+* Write a dart script to control your Tello.
+* Turn on your Tello.
+* Run your script and watch your Tello fly through the air.
 
 ## Usage
 
 Here's some sample code that shows how you can make a Tello takeoff,
 hover in the air for 5 seconds, and then land. 
 
-An important thing to note here is that tello.disconnect() must be called 
+An important thing to note here is that **tello.disconnect()** must be called 
 to properly dispose of the sockets that connect to the tello.
 
 ```dart
@@ -41,9 +41,8 @@ void main() async {
 
 ## Additional information
 
-You may find these links helpful for understanding the underlying SDK 
-that serves as the base for this package.
+This package is a wrapper around the Tello's SDK.
+You can find more information about the SDK at these links.
 
 * https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
 * https://dl-cdn.ryzerobotics.com/downloads/tello/20180910/Tello%20SDK%20Documentation%20EN_1.3.pdf
-* https://tellopilots.com/wiki/index/
