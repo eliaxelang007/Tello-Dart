@@ -91,19 +91,16 @@ class TelloState {
       }.entries.map((element) => '${element.key}: ${element.value}').join('\n\t')}\n)";
 }
 
-String _decode(Uint8List command) => utf8.decode(command).trim();
-Uint8List _encode(String command) => Uint8List.fromList(utf8.encode(command));
-
 /// Represents the Tello in your code.
 class Tello {
-  final TelloSocket _client;
+  final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
   /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
   static Future<Tello> tello({
     Duration timeout = const Duration(seconds: 12),
     Address? telloAddress,
-    Address? clientAddress,
+    Address? localAddress,
     Address? stateReceiverAddress,
   }) async {
     stateReceiverAddress = stateReceiverAddress ??
@@ -112,11 +109,11 @@ class Tello {
     List<TelloSocket> sockets = await Future.wait([
       TelloSocket.telloSocket(
           telloAddress: telloAddress,
-          clientAddress: clientAddress,
+          localAddress: localAddress,
           timeout: timeout),
       TelloSocket.telloSocket(
           telloAddress: telloAddress,
-          clientAddress: stateReceiverAddress,
+          localAddress: stateReceiverAddress,
           timeout: timeout)
     ]);
 
@@ -127,10 +124,10 @@ class Tello {
     return tello;
   }
 
-  Tello._(this._client, this._stateReceiver);
+  Tello._(this._connection, this._stateReceiver);
 
   Future<String> _command(String command) async {
-    String response = _decode(await _client.command(_encode(command)));
+    String response = await _connection.command(command);
 
     if (response.startsWith("error")) {
       String errorMessage = response.substring(5).trim();
@@ -141,7 +138,7 @@ class Tello {
     return response;
   }
 
-  void _send(String command) => _client.send(_encode(command));
+  void _send(String command) => _connection.send(command);
 
   /// Makes the Tello takeoff and then returns the Tello's response.
   Future<String> takeoff() => _command("takeoff");
@@ -238,12 +235,11 @@ class Tello {
 
   /// A stream of [TelloState] from the drone.
   Stream<TelloState> get state =>
-      _stateReceiver.responses.map((Uint8List currentState) {
+      _stateReceiver.responses.map((String currentState) {
         RegExp telloStateRegex = RegExp(
             r"((pitch:)(.+)(;roll:)(.+)(;yaw:)(.+)(;vgx:)(.+)(;vgy:)(.+)(;vgz:)(.+)(;templ:)(.+)(;temph:)(.+)(;tof:)(.+)(;h:)(.+)(;bat:)(.+)(;baro:)(.+)(;time:)(.+)(;agx:)(.+)(;agy:)(.+)(;agz:)(.+)(;))");
 
-        RegExpMatch matches =
-            telloStateRegex.firstMatch(_decode(currentState))!;
+        RegExpMatch matches = telloStateRegex.firstMatch(currentState)!;
 
         return TelloState(
           IMUAttitude(int.parse("${matches[3]}"), int.parse("${matches[5]}"),
@@ -336,12 +332,12 @@ class Tello {
     return double.parse("${matches[2]}");
   }
 
-  /// The Tello's wifi strength to the client, seems to max out at 90%.
+  /// The Tello's wifi strength to your local machine, seems to max out at 90%.
   Future<int> get wifiSnr async => int.parse((await _command("wifi?")));
 
   /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {
-    _client.disconnect();
+    _connection.disconnect();
     _stateReceiver.disconnect();
   }
 }

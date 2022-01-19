@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
@@ -17,28 +17,27 @@ class Address {
 
 class TelloSocket {
   final RawDatagramSocket _socket;
-  late final Stream<Uint8List> _responses;
+  late final Stream<String> _responses;
 
   final Address _telloAddress;
 
-  final Queue<Completer<Uint8List>> _responseQueue =
-      Queue<Completer<Uint8List>>();
+  final Queue<Completer<String>> _responseQueue = Queue<Completer<String>>();
 
-  final Cleaner<StreamSubscription<Uint8List>> _subscriptionCleaner =
-      Cleaner<StreamSubscription<Uint8List>>(
-          cleaner: (StreamSubscription<Uint8List> subscription) {
+  final Cleaner<StreamSubscription<String>> _subscriptionCleaner =
+      Cleaner<StreamSubscription<String>>(
+          cleaner: (StreamSubscription<String> subscription) {
     subscription.cancel();
   });
 
   static Future<TelloSocket> telloSocket(
       {Duration timeout = const Duration(seconds: 12),
       Address? telloAddress,
-      Address? clientAddress}) async {
-    final Address _clientAddress =
-        clientAddress ?? Address(ip: InternetAddress.anyIPv4, port: 9000);
+      Address? localAddress}) async {
+    final Address _localAddress =
+        localAddress ?? Address(ip: InternetAddress.anyIPv4, port: 9000);
 
     return TelloSocket._(
-        await RawDatagramSocket.bind(_clientAddress.ip, _clientAddress.port),
+        await RawDatagramSocket.bind(_localAddress.ip, _localAddress.port),
         telloAddress ??
             Address(ip: InternetAddress("192.168.10.1"), port: 8889),
         timeout: timeout);
@@ -58,30 +57,31 @@ class TelloSocket {
             "Unknown connection from ip $receivedDataAddress");
       }
 
-      return receivedData.data;
+      return utf8.decode(receivedData.data).trim();
     }).asBroadcastStream(
             onListen: _subscriptionCleaner.add,
             onCancel: _subscriptionCleaner.remove);
 
-    _responses.listen((Uint8List response) {
+    _responses.listen((String response) {
       if (_responseQueue.isEmpty) return;
 
       _responseQueue.removeFirst().complete(response);
     });
   }
 
-  Future<Uint8List> command(Uint8List data) {
-    Future<Uint8List> response = receive();
+  Future<String> command(String data) {
+    Future<String> response = receive();
 
     send(data);
 
     return response;
   }
 
-  void send(Uint8List data) {
+  void send(String data) {
     Address destination = _telloAddress;
 
-    int bufferSize = _socket.send(data, destination.ip, destination.port);
+    int bufferSize =
+        _socket.send(utf8.encode(data), destination.ip, destination.port);
 
     if (bufferSize != data.length) {
       throw SocketException("We were unable to send '$data' to '$destination'.",
@@ -89,15 +89,15 @@ class TelloSocket {
     }
   }
 
-  Future<Uint8List> receive() {
-    Completer<Uint8List> responseWaiter = Completer<Uint8List>();
+  Future<String> receive() {
+    Completer<String> responseWaiter = Completer<String>();
 
     _responseQueue.add(responseWaiter);
 
     return responseWaiter.future;
   }
 
-  Stream<Uint8List> get responses => _responses;
+  Stream<String> get responses => _responses;
 
   void disconnect() {
     _subscriptionCleaner.cleanup();
