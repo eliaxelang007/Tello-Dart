@@ -52,15 +52,12 @@ extension CommandExtension on Command {
   }
 
   static Command fromValue(int value) {
-    print(value);
     return _valueMapping[value]!;
   }
 }
 
 class Packet {
   // [header = 0xcc, packetSize, sizeCrc (crc8), [toDrone, fromDrone, packetType, packetSubtype], command, sequence, ...payload, packetCrc (crc16)]
-
-  static const int minimumPacketSize = 11;
 
   final bool _toDrone;
   final PacketType _packetType; // 3 bit
@@ -77,24 +74,24 @@ class Packet {
         _sequence = sequence,
         _payload = payload ?? Uint8List(0);
 
-  Packet.fromBuffer(Uint8List buffer)
-      : _toDrone = false,
-        _packetType = PacketTypeExtension.fromValue((buffer[4] >> 3) & 0x07),
-        _command = CommandExtension.fromValue((buffer[6] << 8) | buffer[5]),
-        _sequence = ((buffer[8]) << 8) | (buffer[7]),
-        _payload = buffer.sublist(9, buffer.length - 2) {
-    int crc8Validation = calculateCrc8(bufffer.sublist(0, 4));
-    int crc16Validation = calculateCrc16(buffer);
+  Packet.fromBuffer(Uint8List bytes)
+      : _toDrone = (bytes[4] & 0x40) == 1,
+        _packetType = PacketTypeExtension.fromValue((bytes[4] >> 3) & 0x07),
+        _command = CommandExtension.fromValue((bytes[6] << 8) | bytes[5]),
+        _sequence = ((bytes[8]) << 8) | (bytes[7]),
+        _payload = bytes.sublist(9, bytes.length - 2) {
+    int crc8Validation = calculateCrc8(buffer.sublist(0, 4));
+    int crc16Validation = calculateCrc16(bytes);
 
     if (crc8Validation != 0 || crc16Validation != 0) {
       throw FormatException(
-          "The packet buffer '$bufffer' failed to be validated with crcs");
+          "The packet buffer '$buffer' failed to be validated with crcs");
     }
   }
 
-  Uint8List get bufffer {
+  Uint8List get buffer {
     int payloadSize = _payload.length;
-    int packetSize = minimumPacketSize + payloadSize;
+    int packetSize = 11 + payloadSize;
 
     int command = _command._value;
 

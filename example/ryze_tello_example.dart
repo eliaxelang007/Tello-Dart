@@ -93,7 +93,8 @@ void main() async {
     //tello.changeConnectionInfo(name: "TELLO_DART", password: "tello1234");
 
     /* Flying Around */
-    print(await tello.takeoff());
+    print("Taking off");
+    await tello.takeoff();
     await Future.delayed(const Duration(seconds: 5));
   } catch (e, s) {
     print("$e\n\n\n$s");

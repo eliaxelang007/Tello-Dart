@@ -18,7 +18,7 @@ Cache<int, int> crcCoefficientCache(int polynomial) =>
       }
 
       return crc;
-    }, inputSanitizer: (int byte) => mask(byte, bits: 8));
+    }, inputSanitizer: (int byte) => mask(byte));
 
 Cache<int, int> crc8Cache =
     crcCoefficientCache(0x8C /* CRC-8-Dallas/Maxim Polynomial */);

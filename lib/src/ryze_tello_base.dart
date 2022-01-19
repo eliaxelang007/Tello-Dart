@@ -153,17 +153,17 @@ class Tello {
     throw TelloError("Couldn't connect to the tello successfully.");
   }
 
-  Future<Packet> _command(Command command,
+  Future<void> _command(Command command,
           {PacketType packetType = PacketType.command}) async =>
-      Packet.fromBuffer(await _connection.command(
+      _connection.send(
           Packet(command, sequence: ++commandSequence, packetType: packetType)
-              .bufffer));
+              .buffer);
 
   /// Makes the Tello takeoff and then returns the Tello's response.
-  Future<Packet> takeoff() => _command(Command.takeoff);
+  Future<void> takeoff() => _command(Command.takeoff);
 
   /// Makes the Tello land and then returns the Tello's response.
-  Future<Packet> land() => _command(Command.land);
+  Future<void> land() => _command(Command.land);
 
   /// Makes the Tello fly [lengthCm] in the [direction] you specify.
   /*Future<String> fly(
