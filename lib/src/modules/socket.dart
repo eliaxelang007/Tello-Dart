@@ -25,12 +25,18 @@ class TelloSocket {
 
   final Cleaner<StreamSubscription<String>> _subscriptionCleaner =
       Cleaner<StreamSubscription<String>>(
-          cleaner: (StreamSubscription<String> subscription) {
+          (StreamSubscription<String> subscription) {
     subscription.cancel();
   });
 
+  final Cleaner<Timer> _timeoutCleaner = Cleaner<Timer>((Timer timer) {
+    timer.cancel();
+  });
+
+  final Duration? _timeout;
+
   static Future<TelloSocket> telloSocket(
-      {Duration timeout = const Duration(seconds: 12),
+      {Duration? timeout = const Duration(seconds: 12),
       Address? telloAddress,
       Address? localAddress}) async {
     final Address _localAddress =
@@ -40,11 +46,11 @@ class TelloSocket {
         await RawDatagramSocket.bind(_localAddress.ip, _localAddress.port),
         telloAddress ??
             Address(ip: InternetAddress("192.168.10.1"), port: 8889),
-        timeout: timeout);
+        timeout);
   }
 
-  TelloSocket._(this._socket, this._telloAddress, {Duration? timeout}) {
-    _responses = ((timeout != null) ? _socket.timeout(timeout) : _socket)
+  TelloSocket._(this._socket, this._telloAddress, this._timeout) {
+    _responses = _socket
         .where((RawSocketEvent event) => event == RawSocketEvent.read)
         .map((RawSocketEvent event) => _socket.receive())
         .where((Datagram? datagram) => datagram != null)
@@ -89,8 +95,26 @@ class TelloSocket {
     }
   }
 
+  int id = 0;
+
   Future<String> receive() {
+    int idcpy = ++id;
+
+    print("A: $idcpy");
     Completer<String> responseWaiter = Completer<String>();
+
+    final Duration? timeout = _timeout;
+
+    if (timeout != null) {
+      _timeoutCleaner.add(Timer(timeout, () {
+        if (responseWaiter.isCompleted) return;
+
+        responseWaiter.completeError(
+            TimeoutException(
+                "The Tello's reponse didn't arrive within the Timeout's duration."),
+            StackTrace.current);
+      }));
+    }
 
     _responseQueue.add(responseWaiter);
 
@@ -101,6 +125,7 @@ class TelloSocket {
 
   void disconnect() {
     _subscriptionCleaner.cleanup();
+    _timeoutCleaner.cleanup();
     _socket.close();
   }
 }

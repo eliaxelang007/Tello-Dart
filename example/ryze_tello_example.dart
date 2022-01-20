@@ -13,7 +13,9 @@ void main() async {
 
     /* Flying Around */
     await tello.takeoff();
-    await tello.fly(FlyDirection.up, 90);
+    await Future.delayed(const Duration(seconds: 3));
+
+    /*await tello.fly(FlyDirection.up, 90);
 
     await tello.rotate(180);
     await tello.rotate(-180);
@@ -70,11 +72,13 @@ void main() async {
 
     for (int i = 0; i < telloState.length; i++) {
       print("${stateValueNames[i]}: ${telloState[i]}");
-    }
+    }*/
 
     /* Landing */
     await tello.land();
     //tello.emergencyShutdown();
+  } catch (e, s) {
+    print("$e\n\n\nStackTrace: $s");
   } finally {
     /* Cleanup & Disconnection */
 

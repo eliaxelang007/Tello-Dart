@@ -2,9 +2,9 @@ class Cleaner<T> {
   final Set<T> _inUse;
   final void Function(T) _clean;
 
-  Cleaner({Set<T>? inUse, void Function(T)? cleaner})
+  Cleaner(void Function(T) cleaner, {Set<T>? inUse})
       : _inUse = inUse ?? {},
-        _clean = cleaner ?? ((_) {});
+        _clean = cleaner;
 
   void add(T inUse) {
     if (_inUse.contains(inUse)) {

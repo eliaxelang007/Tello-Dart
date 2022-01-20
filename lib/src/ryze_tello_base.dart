@@ -96,9 +96,11 @@ class Tello {
   final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
+  Timer? _poller;
+
   /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
   static Future<Tello> tello({
-    Duration timeout = const Duration(seconds: 12),
+    Duration? timeout = const Duration(seconds: 12),
     Address? telloAddress,
     Address? localAddress,
     Address? stateReceiverAddress,
