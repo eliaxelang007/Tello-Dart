@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
+
+import 'package:ryze_tello/src/modules/utilities/cleaner.dart';
 
 import 'modules/utilities/enums.dart';
 
@@ -96,7 +96,11 @@ class Tello {
   final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
-  Timer? _poller;
+  final Cleaner<Timer> _awakerCleaner = Cleaner<Timer>((Timer poller) {
+    poller.cancel();
+  });
+
+  Timer? _awaker;
 
   /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
   static Future<Tello> tello({
@@ -133,7 +137,6 @@ class Tello {
 
     if (response.startsWith("error")) {
       String errorMessage = response.substring(5).trim();
-      print(errorMessage);
       throw (errorMessage.isEmpty) ? TelloError() : TelloError(errorMessage);
     }
 
@@ -141,6 +144,23 @@ class Tello {
   }
 
   void _send(String command) => _connection.send(command);
+
+  int times = 0;
+
+  Timer keepAwake({Duration pollInterval = const Duration(seconds: 10)}) {
+    _awaker?.cancel();
+
+    Timer newAwaker = Timer.periodic(pollInterval, (_) {
+      if (_connection.waiting) return;
+      battery;
+    });
+
+    _awakerCleaner.add(newAwaker);
+
+    _awaker = newAwaker;
+
+    return newAwaker;
+  }
 
   /// Makes the Tello takeoff and then returns the Tello's response.
   Future<String> takeoff() => _command("takeoff");
@@ -339,6 +359,7 @@ class Tello {
 
   /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {
+    _awakerCleaner.cleanup();
     _connection.disconnect();
     _stateReceiver.disconnect();
   }

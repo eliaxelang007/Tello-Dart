@@ -75,6 +75,8 @@ class TelloSocket {
     });
   }
 
+  bool get waiting => _responseQueue.isNotEmpty;
+
   Future<String> command(String data) {
     Future<String> response = receive();
 
