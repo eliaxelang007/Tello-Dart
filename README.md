@@ -2,7 +2,7 @@ This package provides a Dart interface to Tello drones.
 
 ## Getting started
 
-* Install this package from [pub.dev](https://pub.dev/packages/ryze_tello).
+* Install this package on [pub.dev](https://pub.dev/packages/ryze_tello).
 * Write a dart script to control your Tello.
 * Turn on your Tello.
 * Run your script and watch your Tello fly through the air.
