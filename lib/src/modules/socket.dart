@@ -95,24 +95,21 @@ class TelloSocket {
     }
   }
 
-  int id = 0;
-
   Future<String> receive() {
-    int idcpy = ++id;
-
-    print("A: $idcpy");
     Completer<String> responseWaiter = Completer<String>();
 
     final Duration? timeout = _timeout;
 
     if (timeout != null) {
+      StackTrace outerStackTrace = StackTrace.current;
+
       _timeoutCleaner.add(Timer(timeout, () {
         if (responseWaiter.isCompleted) return;
 
         responseWaiter.completeError(
             TimeoutException(
                 "The Tello's reponse didn't arrive within the Timeout's duration."),
-            StackTrace.current);
+            outerStackTrace);
       }));
     }
 
