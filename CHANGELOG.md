@@ -1,6 +1,6 @@
 ## 1.0.4
 
-- Improved timeout system.
+- Added the [keepAwake] method that stops the Tello from automatically shutting off.
 
 ## 1.0.3
 
