@@ -1,3 +1,7 @@
+## 1.0.6
+
+- Changed readme
+
 ## 1.0.5
 
 - Fixed some embarrassing spelling mistakes
