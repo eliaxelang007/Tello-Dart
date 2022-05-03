@@ -1,19 +1,23 @@
+## 1.0.5
+
+- Fixed some embarrassing spelling mistakes
+
 ## 1.0.4
 
-- Added the [keepAwake] method that stops the Tello from automatically shutting off.
+- Added the [keepAwake] method that stops the Tello from automatically shutting off
 
 ## 1.0.3
 
-- Changed readme & miscellaneous.
+- Changed readme & miscellaneous
 
 ## 1.0.2
 
-- Changed readme.
+- Changed readme
 
 ## 1.0.1
 
-- Added documentation.
+- Added documentation
 
 ## 1.0.0
 
-- Initial version.
+- Initial version
