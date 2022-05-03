@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:handy/handy.dart';
 
-import 'modules/socket.dart';
-import 'modules/error.dart';
+import 'modules/tello_socket.dart';
+import 'modules/tello_error.dart';
 
 /// Directions that the tello can fly in.
 enum FlyDirection { forward, back, left, right, up, down }
@@ -55,7 +55,7 @@ class IMUVelocity {
 class TelloState {
   final IMUAttitude imuAttitude;
   final IMUVelocity imuVelocity;
-  final double averageTemprature;
+  final double averageTemperature;
   final int distanceFromTakeoff;
   final int height;
   final int battery;
@@ -67,7 +67,7 @@ class TelloState {
     this.imuAttitude,
     this.imuVelocity,
     this.imuAcceleration,
-    this.averageTemprature,
+    this.averageTemperature,
     this.distanceFromTakeoff,
     this.height,
     this.battery,
@@ -80,7 +80,7 @@ class TelloState {
         "imuAttitude": imuAttitude,
         "imuVelocity": imuVelocity,
         "imuAcceleration": imuAcceleration,
-        "averageTemprature": averageTemprature,
+        "averageTemperature": averageTemperature,
         "distanceFromTakeoff": distanceFromTakeoff,
         "height": height,
         "battery": battery,
@@ -94,9 +94,9 @@ class Tello {
   final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
-  Timer? _awaker;
+  Timer? _sentry;
 
-  /// Serves as the constructor for the Tello class, is a static method because constructors can't be aynchronous.
+  /// Serves as the constructor for the Tello class, is a static method because constructors can't be asynchronous.
   static Future<Tello> tello({
     Duration? timeout = const Duration(seconds: 12),
     Address? telloAddress,
@@ -129,8 +129,10 @@ class Tello {
   Future<String> _command(String command) async {
     String response = await _connection.command(command);
 
-    if (response.startsWith("error")) {
-      String errorMessage = response.substring(5).trim();
+    String errorIdentifier = "error";
+
+    if (response.startsWith(errorIdentifier)) {
+      String errorMessage = response.substring(errorIdentifier.length).trim();
       throw (errorMessage.isEmpty) ? TelloError() : TelloError(errorMessage);
     }
 
@@ -141,9 +143,9 @@ class Tello {
 
   /// Asks the Tello for it's battery every [pollInterval] so that it's automatic shutdown feature doesn't kick in.
   void keepAwake({Duration pollInterval = const Duration(seconds: 10)}) {
-    _awaker?.cancel();
+    _sentry?.cancel();
 
-    _awaker = Timer.periodic(pollInterval, (_) {
+    _sentry = Timer.periodic(pollInterval, (_) {
       if (_connection.waiting) return;
       battery;
     });
@@ -199,7 +201,7 @@ class Tello {
 
   // https://tellopilots.com/threads/how-to-use-curve-x1-y1-z1-x2-y2-z2-speed-command.3134/
   /// Makes the Tello move in a curve that passes through the ([x1], [y1], [z1]) and ([x2], [y2], [z2]) coordinates that you specify.
-  Future<String> cruveToPosition({
+  Future<String> curveToPosition({
     int x1 = 0,
     int y1 = 0,
     int z1 = 0,
@@ -266,7 +268,7 @@ class Tello {
         );
       });
 
-  /// The Tello's speed, persumably in centimeters per seconds.
+  /// The Tello's speed, presumably in centimeters per seconds.
   Future<double> get speed async => double.parse((await _command("speed?")));
 
   /// The Tello's battery percentage
@@ -292,23 +294,23 @@ class Tello {
     return int.parse("${matches[2]}");
   }
 
-  /// The Tello's average temprature, presumably in celsius.
-  Future<double> get averageTemprature async {
-    String tempratureResponse = (await _command("temp?"));
+  /// The Tello's average temperature, presumably in celsius.
+  Future<double> get averageTemperature async {
+    String temperatureResponse = (await _command("temp?"));
 
-    RegExp tempratureRegex = RegExp(r"((\d+)(~)(\d+)(\w+))");
-    RegExpMatch matches = tempratureRegex.firstMatch(tempratureResponse)!;
+    RegExp temperatureRegex = RegExp(r"((\d+)(~)(\d+)(\w+))");
+    RegExpMatch matches = temperatureRegex.firstMatch(temperatureResponse)!;
 
     return (double.parse("${matches[2]}") + double.parse("${matches[4]}")) / 2;
   }
 
   /// The Tello's pitch, roll, and yaw.
   Future<IMUAttitude> get imuAttitude async {
-    String imuAttitudeReponse = (await _command("attitude?"));
+    String imuAttitudeResponse = (await _command("attitude?"));
 
     RegExp imuAttitudeRegex =
         RegExp(r"((pitch:)(.+)(;roll:)(.+)(;yaw:)(.+)(;))");
-    RegExpMatch matches = imuAttitudeRegex.firstMatch(imuAttitudeReponse)!;
+    RegExpMatch matches = imuAttitudeRegex.firstMatch(imuAttitudeResponse)!;
 
     return IMUAttitude(int.parse("${matches[3]}"), int.parse("${matches[5]}"),
         int.parse("${matches[7]}"));
@@ -319,12 +321,12 @@ class Tello {
       double.parse((await _command("baro?")));
 
   Future<IMUAcceleration> get imuAcceleration async {
-    String imuAccelerationReponse = (await _command("acceleration?"));
+    String imuAccelerationResponse = (await _command("acceleration?"));
 
     RegExp imuAccelerationRegex =
         RegExp(r"((agx:)(.+)(;agy:)(.+)(;agz:)(.+)(;))");
     RegExpMatch matches =
-        imuAccelerationRegex.firstMatch(imuAccelerationReponse)!;
+        imuAccelerationRegex.firstMatch(imuAccelerationResponse)!;
 
     return IMUAcceleration(double.parse("${matches[3]}"),
         double.parse("${matches[5]}"), double.parse("${matches[7]}"));
@@ -346,7 +348,7 @@ class Tello {
 
   /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {
-    _awaker?.cancel();
+    _sentry?.cancel();
     _connection.disconnect();
     _stateReceiver.disconnect();
   }

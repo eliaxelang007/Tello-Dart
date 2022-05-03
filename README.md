@@ -34,7 +34,7 @@ void main() async {
   } finally {
     /* Cleanup & Disconnection */
     tello
-        .disconnect(); 
+        .disconnect(); // IMPORTANT: Must be called to properly dispose of the sockets that connect to the tello.
   }
 }
 ```

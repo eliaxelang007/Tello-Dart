@@ -39,8 +39,8 @@ void main() {
       await tello.flyToPosition(x: -102, y: 0, z: 0, speed: 30);
     });
 
-    test("cruveToPosition()", () async {
-      await tello.cruveToPosition(x1: 51, z1: 51, x2: 102);
+    test("curveToPosition()", () async {
+      await tello.curveToPosition(x1: 51, z1: 51, x2: 102);
     });
 
     test("setSpeed()", () async {
@@ -72,7 +72,7 @@ void main() {
       tello.battery,
       tello.flightTime,
       tello.height,
-      tello.averageTemprature,
+      tello.averageTemperature,
       tello.imuAttitude,
       tello.barometerReading,
       tello.distanceFromTakeoff,
@@ -85,7 +85,7 @@ void main() {
       "battery",
       "flightTime",
       "height",
-      "averageTemprature",
+      "averageTemperature",
       "imuAttitude",
       "barometerReading",
       "distanceFromTakeoff",

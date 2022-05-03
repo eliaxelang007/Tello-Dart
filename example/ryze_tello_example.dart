@@ -26,7 +26,7 @@ void main() async {
     await tello.flip(FlipDirection.front);
 
     await tello.flyToPosition(x: -102, y: 0, z: 0, speed: 30);
-    await tello.cruveToPosition(x1: 51, z1: 51, x2: 102);
+    await tello.curveToPosition(x1: 51, z1: 51, x2: 102);
     await tello.setSpeed(10);
 
     tello.remoteControl(pitch: 30);
@@ -48,7 +48,7 @@ void main() async {
       tello.battery,
       tello.flightTime,
       tello.height,
-      tello.averageTemprature,
+      tello.averageTemperature,
       tello.imuAttitude,
       tello.barometerReading,
       tello.distanceFromTakeoff,
@@ -61,7 +61,7 @@ void main() async {
       "battery",
       "flightTime",
       "height",
-      "averageTemprature",
+      "averageTemperature",
       "imuAttitude",
       "barometerReading",
       "distanceFromTakeoff",

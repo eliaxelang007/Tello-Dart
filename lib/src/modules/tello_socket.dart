@@ -110,7 +110,7 @@ class TelloSocket {
 
         responseWaiter.completeError(
             TimeoutException(
-                "The Tello's reponse didn't arrive within the Timeout's duration."),
+                "The Tello's response didn't arrive within the Timeout's duration."),
             outerStackTrace);
       }));
     }
