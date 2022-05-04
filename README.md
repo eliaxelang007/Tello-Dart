@@ -15,6 +15,7 @@ hover in the air for 5 seconds, and then land.
 An important thing to note here is that **tello.disconnect()** must be called 
 to properly dispose of the sockets that connect to the tello.
 
+
 ```dart
 import 'package:ryze_tello/ryze_tello.dart';
 
@@ -39,7 +40,12 @@ void main() async {
 }
 ```
 
+
 You can find a more comprehensive example [here](example/ryze_tello_example.dart).
+
+## Documentation
+
+You can find the documentation for this project [here](https://pub.dev/documentation/ryze_tello/latest/ryze_tello/ryze_tello-library.html).
 
 ## Additional information
 
