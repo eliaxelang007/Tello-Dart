@@ -3,14 +3,13 @@ import 'dart:math';
 
 import 'package:handy/handy.dart';
 
-int mask(int number, {int bits = 8}) => number & (pow(2, bits).floor() - 1);
-
 Cache<int, int, int> crcCoefficientCache(int polynomial) =>
     Cache<int, int, int>((int byte) {
       int crc = 0;
 
       for (int i = 0; i < 8; i++) {
-        int mix = mask((crc ^ byte), bits: 1);
+        int mix =
+            (crc ^ byte) & 0x1; // Zeroes out all bits except for the last 1
 
         crc >>= 1;
 
@@ -20,7 +19,9 @@ Cache<int, int, int> crcCoefficientCache(int polynomial) =>
       }
 
       return crc;
-    }, sanitizer: mask);
+    },
+        sanitizer: (int byte) =>
+            byte & 0xFF); // Zeroes out all bits except for the last 8
 
 Cache<int, int, int> crc8Cache =
     crcCoefficientCache(0x8C /* CRC-8-Dallas/Maxim Polynomial */);
