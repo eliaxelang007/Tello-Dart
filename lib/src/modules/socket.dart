@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'dart:async';
 import 'dart:io';
 
-import 'utilities/cleaner.dart';
+import 'package:handy/handy.dart';
 
 class Address {
   final InternetAddress ip;
@@ -26,7 +26,7 @@ class TelloSocket {
 
   final Cleaner<StreamSubscription<Uint8List>> _subscriptionCleaner =
       Cleaner<StreamSubscription<Uint8List>>(
-          cleaner: (StreamSubscription<Uint8List> subscription) {
+          (StreamSubscription<Uint8List> subscription) {
     subscription.cancel();
   });
 

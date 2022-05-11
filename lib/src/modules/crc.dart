@@ -1,10 +1,12 @@
 import 'dart:typed_data';
+import 'dart:math';
 
-import 'utilities/numbers.dart';
-import 'utilities/cache.dart';
+import 'package:handy/handy.dart';
 
-Cache<int, int> crcCoefficientCache(int polynomial) =>
-    Cache<int, int>((int byte) {
+int mask(int number, {int bits = 8}) => number & (pow(2, bits).floor() - 1);
+
+Cache<int, int, int> crcCoefficientCache(int polynomial) =>
+    Cache<int, int, int>((int byte) {
       int crc = 0;
 
       for (int i = 0; i < 8; i++) {
@@ -18,9 +20,9 @@ Cache<int, int> crcCoefficientCache(int polynomial) =>
       }
 
       return crc;
-    }, inputSanitizer: (int byte) => mask(byte));
+    }, sanitizer: mask);
 
-Cache<int, int> crc8Cache =
+Cache<int, int, int> crc8Cache =
     crcCoefficientCache(0x8C /* CRC-8-Dallas/Maxim Polynomial */);
 
 // https://github.com/hanyazou/TelloPy/blob/2e3ff77f87448307d6d2656c91ac80e2fb352193/tellopy/_internal/crc.py#L36
@@ -36,7 +38,7 @@ int calculateCrc8(Uint8List buffer) {
   return crc;
 }
 
-Cache<int, int> crc16Cache =
+Cache<int, int, int> crc16Cache =
     crcCoefficientCache(0x8408 /* CRC-16-CCITT Polynomial */);
 
 // http://www.sanity-free.com/134/standard_crc_16_in_csharp.html

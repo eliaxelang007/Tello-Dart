@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'utilities/enums.dart';
+import 'package:handy/handy.dart';
 
 import 'crc.dart';
 
