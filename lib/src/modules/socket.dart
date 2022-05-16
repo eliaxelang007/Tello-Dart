@@ -54,8 +54,8 @@ class TelloSocket {
       InternetAddress receivedDataAddress = receivedData.address;
 
       if (receivedDataAddress != _telloAddress.ip) {
-        throw SocketException(
-            "Unknown connection from ip $receivedDataAddress");
+        throw SocketException("Unknown connection from ip $receivedDataAddress",
+            address: receivedDataAddress, port: receivedData.port);
       }
 
       return receivedData.data;

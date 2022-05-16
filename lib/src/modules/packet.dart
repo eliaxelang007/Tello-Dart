@@ -59,53 +59,67 @@ extension CommandExtension on Command {
 class Packet {
   // [header = 0xcc, packetSize, sizeCrc (crc8), [toDrone, fromDrone, packetType, packetSubtype], command, sequence, ...payload, packetCrc (crc16)]
 
-  final bool _toDrone;
-  final PacketType _packetType; // 3 bit
-  final Command _command; // 2 bytes (little endian)
-  final int _sequence; // 2 bytes (little endian) (usually 0)
-  final Uint8List _payload; // varying bytes (optional)
+  final bool toDrone;
+  final PacketType packetType; // 3 bit
+  final Command command; // 2 bytes (little endian)
+  final int sequence; // 2 bytes (little endian) (usually 0)
+  final Uint8List payload; // varying bytes (optional)
 
-  Packet(this._command,
-      {int sequence = 0,
-      PacketType packetType = PacketType.command,
+  late final Uint8List buffer;
+
+  Packet(this.command,
+      {bool? toDrone,
+      PacketType? packetType = PacketType.command,
+      int? sequence = 0,
       Uint8List? payload})
-      : _toDrone = true,
-        _packetType = packetType,
-        _sequence = sequence,
-        _payload = payload ?? Uint8List(0);
+      : toDrone = toDrone ?? true,
+        payload = payload ?? Uint8List(0),
+        packetType = packetType ?? PacketType.command,
+        sequence = sequence ?? 0 {
+    buffer = _createBuffer(
+        this.payload, command, this.packetType, this.toDrone, this.sequence);
+  }
 
   Packet.fromBuffer(Uint8List bytes)
-      : _toDrone = (bytes[4] & 0x40) == 1,
-        _packetType = PacketTypeExtension.fromValue((bytes[4] >> 3) & 0x07),
-        _command = CommandExtension.fromValue((bytes[6] << 8) | bytes[5]),
-        _sequence = ((bytes[8]) << 8) | (bytes[7]),
-        _payload = bytes.sublist(9, bytes.length - 2) {
+      : toDrone = (() {
+          // Checks if the bit that indicates that it's to the drone is set.
+          // https://stackoverflow.com/questions/32188992/get-second-most-significant-bit-of-a-number
+          int packetInfo = bytes[4];
+          return packetInfo > (packetInfo ^ (packetInfo >> 1));
+        })(),
+        packetType = PacketTypeExtension.fromValue((bytes[4] >> 3) & 0x07),
+        command = CommandExtension.fromValue((bytes[6] << 8) | bytes[5]),
+        sequence = ((bytes[8]) << 8) | (bytes[7]),
+        payload = bytes.sublist(9, bytes.length - 2) {
+    buffer = _createBuffer(payload, command, packetType, toDrone, sequence);
+
     int crc8Validation = calculateCrc8(buffer.sublist(0, 4));
+
     int crc16Validation = calculateCrc16(bytes);
 
     if (crc8Validation != 0 || crc16Validation != 0) {
-      throw FormatException(
-          "The packet buffer '$buffer' failed to be validated with crcs");
+      throw FormatException("The CRC validation for buffer '$buffer' failed.");
     }
   }
 
-  Uint8List get buffer {
-    int payloadSize = _payload.length;
+  static Uint8List _createBuffer(Uint8List payload, Command command,
+      PacketType packetType, bool toDrone, int sequence) {
+    int payloadSize = payload.length;
     int packetSize = 11 + payloadSize;
 
-    int command = _command._value;
+    int commandId = command._value;
 
     Uint8List bytes = Uint8List.fromList([
       0xcc,
       packetSize << 3,
       packetSize >> 5,
       0, // Will be crc8 later
-      (_packetType._value << 3) | ((_toDrone) ? 0x40 : 0x80),
-      command,
-      command >> 8,
-      _sequence,
-      _sequence >> 8,
-      ..._payload,
+      (packetType._value << 3) | ((toDrone) ? 0x40 : 0x80),
+      commandId,
+      commandId >> 8,
+      sequence,
+      sequence >> 8,
+      ...payload,
       0, // Will be the first byte of crc 16 later
       0 // Will be the second byte of crc 16 later
     ]);
@@ -124,5 +138,5 @@ class Packet {
 
   @override
   String toString() =>
-      "$Packet(toDrone: $_toDrone, packetType: ${_packetType.toShortString()}, command: ${_command.toShortString()}, sequence: $_sequence, payload: $_payload)";
+      "$Packet(toDrone: $toDrone, packetType: ${packetType.toShortString()}, command: ${command.toShortString()}, sequence: $sequence, payload: $payload)";
 }
