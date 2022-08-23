@@ -12,8 +12,8 @@ This package provides a Dart interface to Tello drones.
 
 <table>
   <tr>
-    <td><img src="https://github.com/eliaxelang007/eliaxelang007/blob/main/static/tello_takeoff.gif" alt="A Tello drone taking off"/></td>
-    <td><img src="https://github.com/eliaxelang007/eliaxelang007/blob/main/static/tello_flip.gif" alt="A Tello drone doing a flip"/></td>
+    <td><img src="images/tello_takeoff.gif" alt="A Tello drone taking off"/></td>
+    <td><img src="images/tello_flip.gif" alt="A Tello drone doing a flip"/></td>
   </tr>
 </table>
 
