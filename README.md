@@ -10,6 +10,13 @@ This package provides a Dart interface to Tello drones.
 * Turn on your Tello.
 * Run your script and watch your Tello fly through the air!
 
+<table>
+  <tr>
+    <td><img src="https://github.com/eliaxelang007/eliaxelang007/blob/main/static/tello_takeoff.gif" alt="A Tello drone taking off"/></td>
+    <td><img src="https://github.com/eliaxelang007/eliaxelang007/blob/main/static/tello_flip.gif" alt="A Tello drone doing a flip"/></td>
+  </tr>
+</table>
+
 ## Usage
 
 Here's some sample code that shows how you can make a Tello takeoff,
