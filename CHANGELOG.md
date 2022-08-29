@@ -1,3 +1,7 @@
+## 1.0.9
+
+- Fixed example images in readme.
+
 ## 1.0.8
 
 - Added example images to readme
