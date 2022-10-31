@@ -1,40 +1,59 @@
 import 'dart:typed_data';
 
+import 'package:ryze_tello/ryze_tello.dart';
 import 'package:ryze_tello/src/modules/packet.dart';
 import 'package:test/test.dart';
 
-import 'package:ryze_tello/ryze_tello.dart';
+void main() async {
+  group("class $Packet", () {
+    test(".buffer", () {
+      final packet =
+          Packet(Command.takeoff, sequence: 1, packetType: PacketType.command)
+              .buffer;
 
-bool isBitSet(int number, int position) {
-  return ((number >> position) & 1) == 1;
-}
+      // https://github.com/Kragrathea/TelloLib/blob/master/TelloLib/Tello.cs
+      final sample =
+          Uint8List.fromList([204, 88, 0, 124, 104, 84, 0, 1, 0, 106, 144]);
 
-void main() {
-  // test("Packet Testing", () {
-  //   Packet packet = Packet(Command.takeoff);
+      for (int i = 0; i < packet.length; i++) {
+        expect(packet[i], equals(sample[i]));
+      }
+    });
+  });
 
-  //   Uint8List sample = Uint8List.fromList(
-  //       [0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0x00, 0x00, 0xc2, 0x16]);
+  group("class $Tello", () {
+    print(
+        "[Warning] Make sure you're connected to your tello's network before running this test.");
 
-  //   print(sample);
-  //   print(packet.buffer);
+    late final Tello tello;
+
+    setUpAll(() async {
+      tello = await Tello.tello();
+    });
+
+    test(".takeoff(...)", () async {
+      await tello.takeoff();
+    });
+
+    test(".land(...)", () async {
+      await Future.delayed(const Duration(seconds: 5));
+      await tello.land();
+    });
+  });
+
+  // late final Tello tello;
+
+  // setUpAll(() async {
+  //   print(
+  //       "[Warning] Make sure you're connected to your tello's network before running this test.");
+  //   tello = await Tello.tello();
   // });
 
-  setUpAll(() async {
-    final Tello tello = await Tello.tello();
-    try {
-      print(
-          "[Warning] Make sure you're connected to your tello's network before running this test.");
+  // group("Successfully connected!", () {
+  //   print("Yay!");
+  // });
 
-      tello.takeoff();
-
-      print("Waiting...");
-      await Future.delayed(const Duration(seconds: 10));
-      print("Done");
-
-      tello.land();
-    } finally {
-      tello.disconnect();
-    }
-  });
+  // tearDownAll(() {
+  //   tello.disconnect();
+  // });
 }

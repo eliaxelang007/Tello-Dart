@@ -8,7 +8,7 @@ enum PacketType { get, data1, data2, command, flipCommand }
 
 extension PacketTypeExtension on PacketType {
   static final Map<int, PacketType> _valueMapping = {
-    for (PacketType type in PacketType.values) type._value: type
+    for (var type in PacketType.values) type._value: type
   };
 
   int get _value {
@@ -24,7 +24,7 @@ enum Command { takeoff, land, flightStatus }
 
 extension CommandExtension on Command {
   static final Map<int, Command> _valueMapping = {
-    for (Command type in Command.values) type._value: type
+    for (var type in Command.values) type._value: type
   };
 
   int get _value {
@@ -68,23 +68,20 @@ class Packet {
   late final Uint8List buffer;
 
   Packet(this.command,
-      {bool? toDrone,
-      PacketType? packetType = PacketType.command,
-      int? sequence = 0,
-      Uint8List? payload})
-      : toDrone = toDrone ?? true,
-        payload = payload ?? Uint8List(0),
-        packetType = packetType ?? PacketType.command,
-        sequence = sequence ?? 0 {
-    buffer = _createBuffer(
-        this.payload, command, this.packetType, this.toDrone, this.sequence);
+      {this.toDrone = true,
+      this.packetType = PacketType.command,
+      this.sequence = 0,
+      List<int> payload = const []})
+      : payload = Uint8List.fromList(payload) {
+    buffer =
+        _createBuffer(this.payload, command, packetType, toDrone, sequence);
   }
 
   Packet.fromBuffer(Uint8List bytes)
       : toDrone = (() {
           // Checks if the bit that indicates that it's to the drone is set.
           // https://stackoverflow.com/questions/32188992/get-second-most-significant-bit-of-a-number
-          int packetInfo = bytes[4];
+          final packetInfo = bytes[4];
           return packetInfo > (packetInfo ^ (packetInfo >> 1));
         })(),
         packetType = PacketTypeExtension.fromValue((bytes[4] >> 3) & 0x07),
@@ -93,9 +90,9 @@ class Packet {
         payload = bytes.sublist(9, bytes.length - 2) {
     buffer = _createBuffer(payload, command, packetType, toDrone, sequence);
 
-    int crc8Validation = calculateCrc8(buffer.sublist(0, 4));
+    final crc8Validation = calculateCrc8(buffer.sublist(0, 4));
 
-    int crc16Validation = calculateCrc16(bytes);
+    final crc16Validation = calculateCrc16(bytes);
 
     if (crc8Validation != 0 || crc16Validation != 0) {
       throw FormatException("The CRC validation for buffer '$buffer' failed.");
@@ -104,12 +101,12 @@ class Packet {
 
   static Uint8List _createBuffer(Uint8List payload, Command command,
       PacketType packetType, bool toDrone, int sequence) {
-    int payloadSize = payload.length;
-    int packetSize = 11 + payloadSize;
+    final payloadSize = payload.length;
+    final packetSize = 11 + payloadSize;
 
-    int commandId = command._value;
+    final commandId = command._value;
 
-    Uint8List bytes = Uint8List.fromList([
+    final bytes = Uint8List.fromList([
       0xcc,
       packetSize << 3,
       packetSize >> 5,
@@ -124,12 +121,12 @@ class Packet {
       0 // Will be the second byte of crc 16 later
     ]);
 
-    int crc8 = calculateCrc8(bytes.sublist(0, 3));
+    final crc8 = calculateCrc8(bytes.sublist(0, 3));
     bytes[3] = crc8;
 
-    int packetEnd = bytes.length - 2;
+    final packetEnd = bytes.length - 2;
 
-    int crc16 = calculateCrc16(bytes.sublist(0, packetEnd));
+    final crc16 = calculateCrc16(bytes.sublist(0, packetEnd));
     bytes[packetEnd] = crc16;
     bytes[packetEnd + 1] = crc16 >> 8;
 

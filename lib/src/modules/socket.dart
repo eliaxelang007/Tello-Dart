@@ -1,7 +1,7 @@
-import 'dart:typed_data';
-import 'dart:collection';
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:handy/handy.dart';
 
@@ -34,7 +34,7 @@ class TelloSocket {
       {Duration timeout = const Duration(seconds: 12),
       Address? telloAddress,
       Address? localAddress}) async {
-    final Address _localAddress =
+    final _localAddress =
         localAddress ?? Address(ip: InternetAddress.anyIPv4, port: 9000);
 
     return TelloSocket._(
@@ -51,7 +51,7 @@ class TelloSocket {
         .where((Datagram? datagram) => datagram != null)
         .map((Datagram? receivedData) {
       receivedData!;
-      InternetAddress receivedDataAddress = receivedData.address;
+      final receivedDataAddress = receivedData.address;
 
       if (receivedDataAddress != _telloAddress.ip) {
         throw SocketException("Unknown connection from ip $receivedDataAddress",
@@ -71,7 +71,7 @@ class TelloSocket {
   }
 
   Future<Uint8List> command(Uint8List data) {
-    Future<Uint8List> response = receive();
+    final response = receive();
 
     send(data);
 
@@ -79,9 +79,9 @@ class TelloSocket {
   }
 
   void send(Uint8List data) {
-    Address destination = _telloAddress;
+    final destination = _telloAddress;
 
-    int bufferSize = _socket.send(data, destination.ip, destination.port);
+    final bufferSize = _socket.send(data, destination.ip, destination.port);
 
     if (bufferSize != data.length) {
       throw SocketException("Unable to send '$data' to '$destination'.",
@@ -90,7 +90,7 @@ class TelloSocket {
   }
 
   Future<Uint8List> receive() {
-    Completer<Uint8List> responseWaiter = Completer<Uint8List>();
+    final responseWaiter = Completer<Uint8List>();
 
     _responseQueue.add(responseWaiter);
 

@@ -5,8 +5,8 @@ import 'dart:typed_data';
 
 import 'package:ryze_tello/src/modules/packet.dart';
 
-import 'modules/socket.dart';
 import 'modules/error.dart';
+import 'modules/socket.dart';
 
 /// Directions that the tello can fly in.
 enum FlyDirection { forward, back, left, right, up, down }
@@ -96,7 +96,7 @@ class Tello {
   final TelloSocket _connection;
   final TelloSocket _stateReceiver;
 
-  int commandSequence = 0;
+  int commandSequence = 1;
 
   /// Serves as the constructor for the Tello class, is a static method because constructors can't be asynchronous.
   static Future<Tello> tello(
@@ -108,7 +108,7 @@ class Tello {
     stateReceiverAddress = stateReceiverAddress ??
         Address(ip: InternetAddress.anyIPv4, port: 8890);
 
-    List<TelloSocket> sockets = await Future.wait([
+    final sockets = await Future.wait([
       TelloSocket.telloSocket(
           telloAddress: telloAddress,
           localAddress: localAddress,
@@ -119,7 +119,7 @@ class Tello {
           timeout: timeout)
     ]);
 
-    Tello tello = Tello._(sockets[0], sockets[1]);
+    final tello = Tello._(sockets[0], sockets[1]);
 
     await tello._connect(videoPort);
 
@@ -129,26 +129,37 @@ class Tello {
   Tello._(this._connection, this._stateReceiver);
 
   Future<void> _connect(int videoPort) async {
-    Uint8List response = await _connection.command(Uint8List.fromList(
+    final response = await _connection.command(Uint8List.fromList(
         [...utf8.encode("conn_req:"), videoPort, videoPort >> 8]));
 
-    if (utf8.decode(response).startsWith("conn_ack:")) return;
+    final acknowledgement = Uint8List.fromList(utf8.encode("conn_ack:"));
 
-    throw TelloError("Couldn't connect to the tello successfully.");
+    for (int i = 0; i < acknowledgement.length; i++) {
+      if (response[i] != acknowledgement[i]) {
+        throw TelloError("Couldn't connect to the tello successfully.");
+      }
+    }
   }
 
   Future<void> _command(Command command,
-          {PacketType packetType = PacketType.command}) async =>
-      _connection.send(
-          Packet(command, sequence: ++commandSequence, packetType: packetType)
-              .buffer);
+          {PacketType packetType = PacketType.command,
+          List<int> payload = const []}) async =>
+      _connection.send(Packet(command,
+              sequence: commandSequence++,
+              /* This increment is a bit weird in this context,
+                 but it's basically a one-liner that returns
+                 the current value of [commandSequence] and
+                 then increments it after. */
+              packetType: packetType,
+              payload: payload)
+          .buffer);
 
-  /// Makes the Tello takeoff and then returns the Tello's response.
+  /// Asks the Tello to takeoff.
   Future<void> takeoff() async =>
       _command(Command.takeoff); //_command(Command.takeoff);
 
-  /// Makes the Tello land and then returns the Tello's response.
-  Future<void> land() => _command(Command.land);
+  /// Asks the Tello to land.
+  Future<void> land() => _command(Command.land, payload: [0x00]);
 
   /// Closes sockets that connect to the Tello and cancels any lingering listeners to the Tello's state.
   void disconnect() {
