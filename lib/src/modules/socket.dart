@@ -5,6 +5,9 @@ import 'dart:typed_data';
 
 import 'package:handy/handy.dart';
 
+typedef ResponseWaiter = Completer<Uint8List>;
+typedef ResponseSubscription = StreamSubscription<Uint8List>;
+
 class Address {
   final InternetAddress ip;
   final int port;
@@ -21,12 +24,10 @@ class TelloSocket {
 
   final Address _telloAddress;
 
-  final Queue<Completer<Uint8List>> _responseQueue =
-      Queue<Completer<Uint8List>>();
+  final Queue<ResponseWaiter> _responseQueue = Queue<ResponseWaiter>();
 
-  final Cleaner<StreamSubscription<Uint8List>> _subscriptionCleaner =
-      Cleaner<StreamSubscription<Uint8List>>(
-          (StreamSubscription<Uint8List> subscription) {
+  final Cleaner<ResponseSubscription> _subscriptionCleaner =
+      Cleaner<ResponseSubscription>((ResponseSubscription subscription) {
     subscription.cancel();
   });
 
@@ -90,7 +91,7 @@ class TelloSocket {
   }
 
   Future<Uint8List> receive() {
-    final responseWaiter = Completer<Uint8List>();
+    final responseWaiter = ResponseWaiter();
 
     _responseQueue.add(responseWaiter);
 

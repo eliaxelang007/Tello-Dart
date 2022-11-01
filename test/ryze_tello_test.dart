@@ -6,14 +6,28 @@ import 'package:test/test.dart';
 
 void main() async {
   group("class $Packet", () {
-    test(".buffer", () {
-      final packet =
-          Packet(Command.takeoff, sequence: 1, packetType: PacketType.command)
-              .buffer;
+    var commandSequence = 1;
 
-      // https://github.com/Kragrathea/TelloLib/blob/master/TelloLib/Tello.cs
+    test("Command.takeoff", () {
+      final packet =
+          Packet(Command.takeoff, sequence: commandSequence++).buffer;
+
+      //
       final sample =
           Uint8List.fromList([204, 88, 0, 124, 104, 84, 0, 1, 0, 106, 144]);
+
+      for (int i = 0; i < packet.length; i++) {
+        expect(packet[i], equals(sample[i]));
+      }
+    });
+
+    test("Command.land", () {
+      final packet =
+          Packet(Command.land, sequence: commandSequence++, payload: [0x00])
+              .buffer;
+
+      final sample =
+          Uint8List.fromList([204, 96, 0, 39, 104, 85, 0, 2, 0, 0, 198, 91]);
 
       for (int i = 0; i < packet.length; i++) {
         expect(packet[i], equals(sample[i]));
@@ -33,27 +47,14 @@ void main() async {
 
     test(".takeoff(...)", () async {
       await tello.takeoff();
+      await Future.delayed(const Duration(seconds: 5));
     });
 
     test(".land(...)", () async {
-      await Future.delayed(const Duration(seconds: 5));
       await tello.land();
     });
   });
-
-  // late final Tello tello;
-
-  // setUpAll(() async {
-  //   print(
-  //       "[Warning] Make sure you're connected to your tello's network before running this test.");
-  //   tello = await Tello.tello();
-  // });
-
-  // group("Successfully connected!", () {
-  //   print("Yay!");
-  // });
-
-  // tearDownAll(() {
-  //   tello.disconnect();
-  // });
 }
+
+/* -- References -- */
+// https://github.com/Kragrathea/TelloLib/blob/master/TelloLib/Tello.cs

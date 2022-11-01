@@ -57,7 +57,16 @@ extension CommandExtension on Command {
 }
 
 class Packet {
-  // [header = 0xcc, packetSize, sizeCrc (crc8), [toDrone, fromDrone, packetType, packetSubtype], command, sequence, ...payload, packetCrc (crc16)]
+  /* [
+    header = 0xcc,
+    packetSize,
+    sizeCrc (crc8),
+    {toDrone, fromDrone, packetType, packetSubtype},
+    command,
+    sequence,
+    ...payload,
+    packetCrc (crc16)
+  ] */
 
   final bool toDrone;
   final PacketType packetType; // 3 bit
@@ -75,13 +84,14 @@ class Packet {
       : payload = Uint8List.fromList(payload) {
     buffer =
         _createBuffer(this.payload, command, packetType, toDrone, sequence);
+
+    print(this);
   }
 
   Packet.fromBuffer(Uint8List bytes)
       : toDrone = (() {
-          // Checks if the bit that indicates that it's to the drone is set.
-          // https://stackoverflow.com/questions/32188992/get-second-most-significant-bit-of-a-number
           final packetInfo = bytes[4];
+          // Checks if the bit that indicates that it's to the drone is set.
           return packetInfo > (packetInfo ^ (packetInfo >> 1));
         })(),
         packetType = PacketTypeExtension.fromValue((bytes[4] >> 3) & 0x07),
@@ -137,3 +147,6 @@ class Packet {
   String toString() =>
       "$Packet(toDrone: $toDrone, packetType: ${packetType.toShortString()}, command: ${command.toShortString()}, sequence: $sequence, payload: $payload)";
 }
+
+/* -- References -- */
+// https://stackoverflow.com/questions/32188992/get-second-most-significant-bit-of-a-number
