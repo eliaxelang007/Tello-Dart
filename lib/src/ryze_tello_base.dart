@@ -136,7 +136,7 @@ class Tello {
 
     for (int i = 0; i < acknowledgement.length; i++) {
       if (response[i] != acknowledgement[i]) {
-        print(Packet.fromBuffer(response));
+        //print(Packet.fromBuffer(response));
         throw TelloError("Couldn't connect to the tello successfully.");
       }
     }

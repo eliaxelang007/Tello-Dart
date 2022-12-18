@@ -84,8 +84,6 @@ class Packet {
       : payload = Uint8List.fromList(payload) {
     buffer =
         _createBuffer(this.payload, command, packetType, toDrone, sequence);
-
-    print(this);
   }
 
   Packet.fromBuffer(Uint8List bytes)
