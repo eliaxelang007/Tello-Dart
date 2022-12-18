@@ -1,6 +1,6 @@
 name: ryze_tello
 description: A Dart library that provides a high level API to the Tello drone's SDK.
-version: 1.0.9
+version: 1.1.0
 homepage: https://github.com/eliaxelang007/Tello-Dart
 
 environment:
@@ -9,4 +9,5 @@ environment:
 dev_dependencies:
   lints: ^1.0.0
   test: ^1.16.0
+
 dependencies: {handy: ^1.0.3}

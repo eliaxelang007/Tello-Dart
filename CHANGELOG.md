@@ -1,3 +1,7 @@
+## 1.1.0
+
+- Changed the projects's license.
+
 ## 1.0.9
 
 - Fixed example images in readme.
